@@ -68,13 +68,13 @@ def make_signal() -> MakeSignal:
     columns = []
     for _ in range(num_columns):
       coeffs = torch.randn(num_frequency_modes, generator=generator, dtype=eigenvectors.dtype)
-      x, _ = approximately_bandlimited(coeffs=coeffs,
-                                       num_frequency_modes=num_frequency_modes,
-                                       signal_type="lowpass",
-                                       eigenvector=eigenvectors,
-                                       noise_level=0.05,
-                                       random_generator=generator)
-      columns.append(x.squeeze(-1))  # (N, 1) -> (N,)
+      signal = approximately_bandlimited(coeffs=coeffs,
+                                         num_frequency_modes=num_frequency_modes,
+                                         signal_type="lowpass",
+                                         eigenvector=eigenvectors,
+                                         noise_level=0.05,
+                                         random_generator=generator)
+      columns.append(signal.x.squeeze(-1))  # (N, 1) -> (N,)
     signal = torch.stack(columns, dim=-1)  # (N, num_columns)
     return signal.squeeze(-1) if num_columns == 1 else signal
   return _make
