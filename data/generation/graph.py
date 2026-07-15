@@ -41,41 +41,40 @@ def grid_graph(
 
 
 def erdos_renyi_graph():
-  is_directed = False
-
-  metadata = {
-    "graph_type": graph_type,
-    "num_nodes": num_nodes,
-    "num_edges": edge_index.size(1),
-    "edge_prob_range": erdos_renyi_edge_prob_range,
-    "edge_prob": edge_prob,
-  }
-  pass
+  # is_directed = False
+  # metadata = {
+  #   "graph_type": graph_type,
+  #   "num_nodes": num_nodes,
+  #   "num_edges": edge_index.size(1),
+  #   "edge_prob_range": erdos_renyi_edge_prob_range,
+  #   "edge_prob": edge_prob,
+  # }
+  raise NotImplementedError
 
 
 def barabasi_albert_graph():
-  metadata = {
-    "graph_type": graph_type,
-    "num_nodes": num_nodes,
-    "num_edges": edge_index.size(1),
-    "num_edges_per_new_node": num_edges_per_new_node,
-    "num_edges_per_new_node_range": barabasi_albert_min_num_edges_per_new_node_range,
-  }
-  pass
+  # metadata = {
+  #   "graph_type": graph_type,
+  #   "num_nodes": num_nodes,
+  #   "num_edges": edge_index.size(1),
+  #   "num_edges_per_new_node": num_edges_per_new_node,
+  #   "num_edges_per_new_node_range": barabasi_albert_min_num_edges_per_new_node_range,
+  # }
+  raise NotImplementedError
 
 
 def stochastic_block_model_graph():
-  metadata = {
-    "graph_type": graph_type,
-    "num_nodes": num_nodes,
-    "num_edges": edge_index.size(1),
-    "num_blocks": num_blocks,
-    "block_sizes": block_sizes,
-    "edge_probs": edge_probs,
-    "intra_block_prob": intra_block_prob,
-    "inter_block_prob": inter_block_prob,
-  }
-  pass
+  # metadata = {
+  #   "graph_type": graph_type,
+  #   "num_nodes": num_nodes,
+  #   "num_edges": edge_index.size(1),
+  #   "num_blocks": num_blocks,
+  #   "block_sizes": block_sizes,
+  #   "edge_probs": edge_probs,
+  #   "intra_block_prob": intra_block_prob,
+  #   "inter_block_prob": inter_block_prob,
+  # }
+  raise NotImplementedError
 
 
 def generate_graph(
@@ -88,14 +87,11 @@ def generate_graph(
                                       requested_num_nodes=num_nodes,
                                       device=device)
   elif graph_type == 'erdos_renyi':
-    edge_index = None
-    metadata = None
+    raise NotImplementedError
   elif graph_type == 'barabasi_albert':
-    edge_index = None
-    metadata = None
+    raise NotImplementedError
   elif graph_type == 'sbm':
-    edge_index = None
-    metadata = None
+    raise NotImplementedError
   else:
     raise ValueError(f"Invalid graph type: {graph_type}")
 
