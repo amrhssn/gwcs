@@ -16,7 +16,7 @@ from transform.utils import (
 )
 
 
-def rescale_laplacian_spectrum_to_chebyshev_domain(
+def _rescale_laplacian_spectrum_to_chebyshev_domain(
         symmetric_normalized_laplacian: torch.Tensor,
         spectrum_lower_bound: float,
         spectrum_upper_bound: float,
@@ -33,7 +33,7 @@ def rescale_laplacian_spectrum_to_chebyshev_domain(
   return rescaled_symmetric_normalized_laplacian
 
 
-def chebyshev_nodes(
+def _chebyshev_nodes(
         chebyshev_degree: int,
         device: torch.device,
         dtype: torch.dtype
@@ -44,7 +44,7 @@ def chebyshev_nodes(
   return theta, torch.cos(theta)
 
 
-def compute_chebyshev_coeffs(
+def _compute_chebyshev_coeffs(
         spectral_kernels: list[Callable[[torch.Tensor], torch.Tensor]],
         spectrum_lower_bound: float,
         spectrum_upper_bound: float,
@@ -52,9 +52,9 @@ def compute_chebyshev_coeffs(
         device: torch.device,
         dtype: torch.dtype,
 ) -> torch.Tensor:
-  theta, x = chebyshev_nodes(chebyshev_degree=chebyshev_degree,
-                             device=device,
-                             dtype=dtype)
+  theta, x = _chebyshev_nodes(chebyshev_degree=chebyshev_degree,
+                              device=device,
+                              dtype=dtype)
   a = (spectrum_upper_bound - spectrum_lower_bound) / 2.0
   b = (spectrum_upper_bound + spectrum_lower_bound) / 2.0
   lam = a * x + b
@@ -64,7 +64,7 @@ def compute_chebyshev_coeffs(
   return (2.0 / (chebyshev_degree + 1)) * (samples @ cos_k_theta.T)
 
 
-def chebyshev_terms(
+def _chebyshev_terms(
         rescaled_symmetric_normalized_laplacian: torch.Tensor,
         vector: torch.Tensor,
         chebyshev_degree: int
@@ -84,15 +84,15 @@ def chebyshev_terms(
     term_prev2, term_prev1 = term_prev1, term_curr
 
 
-def compute_dual_chebyshev_coeffs(
+def _compute_dual_chebyshev_coeffs(
         chebyshev_coeffs: torch.Tensor,
         chebyshev_degree: int,
         eps: float = 1e-12
 ) -> torch.Tensor:
   device, dtype = chebyshev_coeffs.device, chebyshev_coeffs.dtype
-  theta, _ = chebyshev_nodes(chebyshev_degree=chebyshev_degree,
-                             device=device,
-                             dtype=dtype)
+  theta, _ = _chebyshev_nodes(chebyshev_degree=chebyshev_degree,
+                              device=device,
+                              dtype=dtype)
   k = torch.arange(chebyshev_degree + 1, device=device, dtype=dtype).unsqueeze(1)
   cos_k_theta = torch.cos(k * theta.unsqueeze(0))
   coeffs = chebyshev_coeffs.clone()
@@ -103,7 +103,7 @@ def compute_dual_chebyshev_coeffs(
   return dual_chebyshev_coeffs
 
 
-def resolve_rescaled_laplacian_and_chebyshev_coeffs(
+def _resolve_rescaled_laplacian_and_chebyshev_coeffs(
         reference_tensor: torch.Tensor,
         symmetric_normalized_laplacian: torch.Tensor,
         spectral_kernels: list[Callable[[torch.Tensor], torch.Tensor]],
@@ -114,17 +114,17 @@ def resolve_rescaled_laplacian_and_chebyshev_coeffs(
 ) -> tuple[torch.Tensor, torch.Tensor]:
   device, dtype = reference_tensor.device, reference_tensor.dtype
   if rescaled_symmetric_normalized_laplacian is None:
-    rescaled_symmetric_normalized_laplacian = rescale_laplacian_spectrum_to_chebyshev_domain(
+    rescaled_symmetric_normalized_laplacian = _rescale_laplacian_spectrum_to_chebyshev_domain(
       symmetric_normalized_laplacian=symmetric_normalized_laplacian.to(device=device, dtype=dtype),
       spectrum_lower_bound=spectrum_lower_bound,
       spectrum_upper_bound=spectrum_upper_bound
     )
-  chebyshev_coeffs = compute_chebyshev_coeffs(spectral_kernels=spectral_kernels,
-                                              spectrum_lower_bound=spectrum_lower_bound,
-                                              spectrum_upper_bound=spectrum_upper_bound,
-                                              chebyshev_degree=chebyshev_degree,
-                                              device=device,
-                                              dtype=dtype)
+  chebyshev_coeffs = _compute_chebyshev_coeffs(spectral_kernels=spectral_kernels,
+                                               spectrum_lower_bound=spectrum_lower_bound,
+                                               spectrum_upper_bound=spectrum_upper_bound,
+                                               chebyshev_degree=chebyshev_degree,
+                                               device=device,
+                                               dtype=dtype)
   return rescaled_symmetric_normalized_laplacian, chebyshev_coeffs
 
 
@@ -137,7 +137,7 @@ def analysis(
         chebyshev_degree: int = 30,
         rescaled_symmetric_normalized_laplacian: torch.Tensor | None = None
 ) -> torch.Tensor:
-  rescaled_symmetric_normalized_laplacian, chebyshev_coeffs = resolve_rescaled_laplacian_and_chebyshev_coeffs(
+  rescaled_symmetric_normalized_laplacian, chebyshev_coeffs = _resolve_rescaled_laplacian_and_chebyshev_coeffs(
     reference_tensor=signal,
     symmetric_normalized_laplacian=symmetric_normalized_laplacian,
     spectral_kernels=spectral_kernels,
@@ -149,7 +149,7 @@ def analysis(
   chebyshev_coeffs[:, 0] *= 0.5
   signal_flat, trailing_shape = flatten_trailing_dims(signal)  # (N, S)
 
-  chebyshev_term_generator = chebyshev_terms(
+  chebyshev_term_generator = _chebyshev_terms(
     rescaled_symmetric_normalized_laplacian=rescaled_symmetric_normalized_laplacian,
     vector=signal_flat,
     chebyshev_degree=chebyshev_degree
@@ -169,7 +169,7 @@ def synthesis(
         chebyshev_degree: int = 30,
         rescaled_symmetric_normalized_laplacian: torch.Tensor | None = None
 ) -> torch.Tensor:
-  rescaled_symmetric_normalized_laplacian, chebyshev_coeffs = resolve_rescaled_laplacian_and_chebyshev_coeffs(
+  rescaled_symmetric_normalized_laplacian, chebyshev_coeffs = _resolve_rescaled_laplacian_and_chebyshev_coeffs(
     reference_tensor=wavelet_coeffs,
     symmetric_normalized_laplacian=symmetric_normalized_laplacian,
     spectral_kernels=spectral_kernels,
@@ -178,8 +178,8 @@ def synthesis(
     chebyshev_degree=chebyshev_degree,
     rescaled_symmetric_normalized_laplacian=rescaled_symmetric_normalized_laplacian
   )
-  dual_chebyshev_coeffs = compute_dual_chebyshev_coeffs(chebyshev_coeffs=chebyshev_coeffs,
-                                                        chebyshev_degree=chebyshev_degree)
+  dual_chebyshev_coeffs = _compute_dual_chebyshev_coeffs(chebyshev_coeffs=chebyshev_coeffs,
+                                                         chebyshev_degree=chebyshev_degree)
   dual_chebyshev_coeffs[:, 0] *= 0.5
 
   num_nodes = wavelet_coeffs.shape[0]
@@ -190,7 +190,7 @@ def synthesis(
     num_columns *= dim
   wavelet_coeffs_flat_for_recursion = wavelet_coeffs.reshape(num_nodes, num_columns * num_filters)  # (N, S*F)
 
-  chebyshev_term_generator = chebyshev_terms(
+  chebyshev_term_generator = _chebyshev_terms(
     rescaled_symmetric_normalized_laplacian=rescaled_symmetric_normalized_laplacian,
     vector=wavelet_coeffs_flat_for_recursion,
     chebyshev_degree=chebyshev_degree

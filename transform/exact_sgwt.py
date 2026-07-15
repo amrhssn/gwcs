@@ -2,6 +2,7 @@ from typing import Callable
 
 import torch
 
+from data.utils_graph import compute_eigendecomposition
 from transform.kernels import (
   compute_dual_kernel_samples,
   compute_spectral_kernel_samples
@@ -12,19 +13,7 @@ from transform.utils import (
 )
 
 
-def compute_eigendecomposition(
-        symmetric_normalized_laplacian: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor]:
-  dense_symmetric_normalized_laplacian = (
-    symmetric_normalized_laplacian.to_dense()
-    if symmetric_normalized_laplacian.is_sparse
-    else symmetric_normalized_laplacian
-  )
-  eigenvalues, eigenvectors = torch.linalg.eigh(dense_symmetric_normalized_laplacian)
-  return eigenvalues, eigenvectors
-
-
-def resolve_eigendecomposition(
+def _resolve_eigendecomposition(
         reference_tensor: torch.Tensor,
         symmetric_normalized_laplacian: torch.Tensor,
         eigenvalues: torch.Tensor | None,
@@ -43,7 +32,7 @@ def analysis(
         eigenvalues: torch.Tensor | None = None,
         eigenvectors: torch.Tensor | None = None,
 ) -> torch.Tensor:
-  eigenvalues, eigenvectors = resolve_eigendecomposition(
+  eigenvalues, eigenvectors = _resolve_eigendecomposition(
     reference_tensor=signal,
     symmetric_normalized_laplacian=symmetric_normalized_laplacian,
     eigenvalues=eigenvalues,
@@ -67,7 +56,7 @@ def synthesis(
         eigenvectors: torch.Tensor | None = None,
         eps: float = 1e-12,
 ) -> torch.Tensor:
-  eigenvalues, eigenvectors = resolve_eigendecomposition(
+  eigenvalues, eigenvectors = _resolve_eigendecomposition(
     reference_tensor=wavelet_coeffs,
     symmetric_normalized_laplacian=symmetric_normalized_laplacian,
     eigenvalues=eigenvalues,
