@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "gwcs"
 version = "0.1.0"
-description = "Add your description here"
+description = "Multilevel Graph Wavelet Compressed Sensing with Scale-Aware Neural Recovery"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
