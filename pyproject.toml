@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "gwcs"
 version = "0.1.0"
@@ -20,9 +24,19 @@ cpu = [
     "torchvision==0.27.1",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/data",
+    "src/eval",
+    "src/model",
+    "src/steps",
+    "src/transform",
+    "src/visualization",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 filterwarnings = [
     "ignore:`torch.jit.script` is deprecated:DeprecationWarning:torch.jit._script",
 ]
