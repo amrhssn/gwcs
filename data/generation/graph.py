@@ -6,7 +6,6 @@ from torch_geometric.utils import (
   remove_self_loops,
   is_undirected,
   get_laplacian,
-  to_dense_adj,
   to_torch_coo_tensor
 )
 
@@ -14,7 +13,10 @@ from data.types import (
   GridGraphMetadata,
   Graph
 )
-from data.utils_graph import is_connected
+from data.utils_graph import (
+  is_connected,
+  compute_eigendecomposition
+)
 
 
 def grid_graph(
@@ -110,14 +112,9 @@ def generate_graph(
     size=metadata.num_nodes,
     is_coalesced=True,
   )
-
-  # spectral decomposition of symmetric normalized laplacian
-  laplacian_sym = to_dense_adj(
-    edge_index=laplacian_index,
-    edge_attr=laplacian_weight,
-    max_num_nodes=metadata.num_nodes
-  ).squeeze()
-  eigenvalues, eigenvectors = torch.linalg.eigh(laplacian_sym)
+  eigenvalues, eigenvectors = compute_eigendecomposition(
+    symmetric_normalized_laplacian=symmetric_normalized_laplacian
+  )
 
   # data construction
   graph = Graph(edge_index=edge_index,
