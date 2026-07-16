@@ -28,7 +28,7 @@ def approximately_bandlimited(
     selected_indices = torch.arange(start_idx, start_idx + num_frequency_modes, device=eigenvector.device)
 
   elif signal_type == 'R-sparse':
-    perm = torch.randperm(num_nodes, generator=random_generator, device=eigenvector.device)
+    perm = torch.randperm(num_nodes, generator=random_generator).to(coeffs.device)
     selected_indices, _ = torch.sort(perm[:num_frequency_modes])
 
   else:
@@ -42,8 +42,7 @@ def approximately_bandlimited(
     noise_std = float(noise_std)
     noise = torch.randn(num_nodes,
                         generator=random_generator,
-                        dtype=eigenvector.dtype,
-                        device=eigenvector.device)
+                        dtype=eigenvector.dtype).to(coeffs.device)
     noise = noise * noise_std
     x = x_clean + noise
   else:

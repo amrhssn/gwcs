@@ -56,8 +56,7 @@ def _generate_abl_signal_coeffs(
   coeffs = torch.normal(mean=coeffs_mean,
                         std=coeffs_std,
                         size=(num_frequency_modes,),
-                        device=device,
-                        generator=random_generator)
+                        generator=random_generator).to(device)
   return coeffs, num_frequency_modes
 
 
