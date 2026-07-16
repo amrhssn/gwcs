@@ -96,3 +96,25 @@ def test_keep_ratio_one_keeps_everything(multilevel_importance_sampling):
   mask = multilevel_importance_sampling(coeffs, keep_ratio=1.0)
 
   assert torch.equal(mask, torch.ones_like(coeffs))
+
+
+def test_pytorch_style_batch_axis_of_size_one_stays_explicit(multilevel_importance_sampling):
+  num_nodes, keep_ratio = 6, 0.5
+  signal = energies_to_coeffs(num_nodes, scale_energies=[100.0, 0.0]).unsqueeze(1)  # (N, C=1, F=2)
+  coeffs = signal.unsqueeze(1)  # (N, B=1, C=1, F=2)
+
+  mask = multilevel_importance_sampling(coeffs, keep_ratio=keep_ratio)
+
+  assert mask.shape == coeffs.shape
+  assert mask[:, 0, 0, 0].sum().item() == num_nodes and mask[:, 0, 0, 1].sum().item() == 0
+
+
+def test_single_filter_keeps_budget_and_capacity(multilevel_importance_sampling):
+  num_nodes, keep_ratio = 8, 0.5
+  coeffs = energies_to_coeffs(num_nodes, scale_energies=[42.0])  # (N, F=1)
+
+  mask = multilevel_importance_sampling(coeffs, keep_ratio=keep_ratio)
+
+  assert mask.shape == coeffs.shape
+  assert mask.sum().item() == int(num_nodes * 1 * keep_ratio)
+  assert (mask.sum(dim=0) <= num_nodes).all()

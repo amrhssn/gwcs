@@ -11,6 +11,7 @@ from data.types import (
   GraphWaveletTransformConfig
 )
 from steps.data_generation import generate_abl_dataset
+from sampler.mlis_vectorized import multilevel_importance_sampling
 
 
 def main():
@@ -24,7 +25,7 @@ def main():
   # graph configs
   graph_types: list[Literal['grid', 'erdos_renyi', 'barabasi_albert', 'sbm']] = ['grid']
   num_nodes_range = (100, 1_000)
-  num_graphs_per_type = 100
+  num_graphs_per_type = 50
   # signal configs
   signal_types: list[Literal['lowpass', 'highpass', 'bandpass', 'R-sparse']] = ['lowpass']
   max_num_frequency_mode_ratio = 0.1
@@ -84,8 +85,12 @@ def main():
 
   # training loop
   for epoch in range(num_epochs):
-    for batch in train_loader:
-      batch = batch.to(device)
+    for batch_idx, batch in enumerate(train_loader):
+      mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
+                                            keep_ratio=0.01,
+                                            batch=batch.batch)
+      break
+    break
 
 
 if __name__ == "__main__":

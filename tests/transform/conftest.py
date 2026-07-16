@@ -56,6 +56,12 @@ def kernel_bank() -> KernelBank:
 
 
 @pytest.fixture
+def single_filter_kernel_bank() -> KernelBank:
+  kernels = default_kernels(LAMBDA_MIN, scales=[])  # scaling kernel only, F == 1
+  return kernels, LAMBDA_MIN, LAMBDA_MAX, CHEBYSHEV_DEGREE
+
+
+@pytest.fixture
 def make_signal() -> MakeSignal:
   def _make(
           eigenvectors: torch.Tensor,
@@ -75,6 +81,6 @@ def make_signal() -> MakeSignal:
                                          noise_level=0.05,
                                          random_generator=generator)
       columns.append(signal.x.squeeze(-1))  # (N, 1) -> (N,)
-    signal = torch.stack(columns, dim=-1)  # (N, num_columns)
-    return signal.squeeze(-1) if num_columns == 1 else signal
+    signal = torch.stack(columns, dim=-1)  # (N, num_columns), num_columns kept explicit even when == 1
+    return signal
   return _make

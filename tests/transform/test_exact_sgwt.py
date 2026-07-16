@@ -16,7 +16,8 @@ def test_single_graph_single_channel(
 
   W = exact_sgwt.analysis(x, L, kernels)
   x_hat = exact_sgwt.synthesis(W, L, kernels)
-  assert W.shape == (num_nodes, len(kernels))
+  assert x.shape == (num_nodes, 1)
+  assert W.shape == (num_nodes, 1, len(kernels))
   assert x_hat.shape == x.shape
 
   error = relative_error(x, x_hat)
@@ -57,7 +58,8 @@ def test_heterogeneous_graphs_single_channel(
 
   W = exact_sgwt.analysis(x, L, kernels)
   x_hat = exact_sgwt.synthesis(W, L, kernels)
-  assert W.shape == (num_nodes_a + num_nodes_b, len(kernels))
+  assert x.shape == (num_nodes_a + num_nodes_b, 1)
+  assert W.shape == (num_nodes_a + num_nodes_b, 1, len(kernels))
   assert x_hat.shape == x.shape
 
   error = relative_error(x, x_hat)
@@ -129,4 +131,46 @@ def test_shared_graph_batch_of_multichannel_signals(
 
   error = relative_error(x_batch_first, x_hat_batch_first)
   print(f"[exact_sgwt] shared_graph_batch_of_multichannel_signals relative reconstruction error = {error:.6e}")
+  assert error < 1e-6
+
+
+def test_single_filter_kernel_bank(
+        grid_graph: GridGraph,
+        single_filter_kernel_bank: KernelBank,
+        make_signal: MakeSignal
+) -> None:
+  L, eigenvectors, num_nodes = grid_graph
+  kernels, *_ = single_filter_kernel_bank
+  assert len(kernels) == 1
+  x = make_signal(eigenvectors)
+
+  W = exact_sgwt.analysis(x, L, kernels)
+  x_hat = exact_sgwt.synthesis(W, L, kernels)
+  assert W.shape == (num_nodes, 1, 1)
+  assert x_hat.shape == x.shape
+
+  error = relative_error(x, x_hat)
+  print(f"[exact_sgwt] single_filter_kernel_bank relative reconstruction error = {error:.6e}")
+  assert error < 1e-6
+
+
+def test_shared_graph_batch_size_one(
+        grid_graph: GridGraph,
+        kernel_bank: KernelBank,
+        make_signal: MakeSignal
+) -> None:
+  L, eigenvectors, num_nodes = grid_graph
+  kernels, *_ = kernel_bank
+  batch_size = 1
+  x_batch_first = make_signal(eigenvectors, num_columns=batch_size).permute(1, 0)  # (B=1, N)
+  signal = x_batch_first.permute(1, 0)  # (N, B=1)
+
+  W = exact_sgwt.analysis(signal, L, kernels)
+  x_hat = exact_sgwt.synthesis(W, L, kernels)
+  x_hat_batch_first = x_hat.permute(1, 0)
+  assert W.shape == (num_nodes, batch_size, len(kernels))
+  assert x_hat_batch_first.shape == x_batch_first.shape
+
+  error = relative_error(x_batch_first, x_hat_batch_first)
+  print(f"[exact_sgwt] shared_graph_batch_size_one relative reconstruction error = {error:.6e}")
   assert error < 1e-6
