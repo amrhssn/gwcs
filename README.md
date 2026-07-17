@@ -6,6 +6,7 @@ Ran all four datasets via `run_train_turbulent_99k.sh`, `run_train_kolmogorov_99
   checks (`data/dataset_turbulent.py`, `data/utils_io.py`, `models/reconstruction.py`)
   with dynamic lookups so kolmogorov, dynamic_stall, and viscoelastic_instability work
   correctly.
+  
 **Optimization**
 - added GPU-batched Chebyshev preprocessing (`preprocess.py`), replacing one-sample-at-a-time CPU threading.
 - rewrote normalization stats as a single-pass Chan's algorithm (`normalization_turbulent.py`), halving I/O and avoiding NCCL timeouts during DDP.
