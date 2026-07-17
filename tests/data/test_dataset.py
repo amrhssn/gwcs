@@ -9,6 +9,44 @@ from model.nigwt import NeuralInverseGraphWaveletTransform
 from tests.data.conftest import BATCH_SIZE
 
 
+def _assert_honestly_coalesced(laplacian: torch.Tensor) -> None:
+  with torch.sparse.check_sparse_tensor_invariants():
+    torch.sparse_coo_tensor(laplacian.indices(), laplacian.values(),
+                           size=laplacian.shape, is_coalesced=True)
+
+
+def test_single_sample_laplacian_is_honestly_coalesced(
+        small_abl_dataset: ABLGraphSignalDataset,
+        gwt_config: GraphWaveletTransformConfig,
+) -> None:
+  for sample_idx, sample in enumerate(small_abl_dataset.samples):
+    data = sample_to_data(sample, sample_idx, gwt_config)
+    _assert_honestly_coalesced(data.symmetric_normalized_laplacian())
+    _assert_honestly_coalesced(data.rescaled_symmetric_normalized_laplacian())
+
+
+def test_single_sample_laplacian_csr_matmul_matches_dense(
+        small_abl_dataset: ABLGraphSignalDataset,
+        gwt_config: GraphWaveletTransformConfig,
+) -> None:
+  # A backend that trusts is_coalesced=True (e.g. CUDA's COO->CSR fast path) will silently
+  # compute garbage if the indices aren't actually sorted, even though .to_dense() looks fine.
+  for sample_idx, sample in enumerate(small_abl_dataset.samples):
+    data = sample_to_data(sample, sample_idx, gwt_config)
+    laplacian = data.symmetric_normalized_laplacian()
+    v = torch.randn(laplacian.shape[0], 3)
+    assert torch.allclose(laplacian.to_sparse_csr() @ v, laplacian.to_dense() @ v, atol=1e-5)
+
+
+def test_batch_laplacian_is_honestly_coalesced(
+        small_abl_dataset: ABLGraphSignalDataset,
+) -> None:
+  loader = DataLoader(dataset=small_abl_dataset, batch_size=BATCH_SIZE, shuffle=False)
+  batch = next(iter(loader))
+  _assert_honestly_coalesced(batch.symmetric_normalized_laplacian())
+  _assert_honestly_coalesced(batch.rescaled_symmetric_normalized_laplacian())
+
+
 def test_single_sample_laplacian_matches_source_exactly(
         small_abl_dataset: ABLGraphSignalDataset,
         gwt_config: GraphWaveletTransformConfig,

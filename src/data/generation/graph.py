@@ -110,7 +110,7 @@ def generate_graph(
     edge_index=laplacian_index,
     edge_attr=laplacian_weight,
     size=metadata.num_nodes,
-    is_coalesced=True,
+    is_coalesced=False,
   )
   eigenvalues, eigenvectors = compute_eigendecomposition(
     symmetric_normalized_laplacian=symmetric_normalized_laplacian
