@@ -12,9 +12,9 @@ Install dependencies:
 
 For CUDA machine:
 ```bash
-uv sync --extra gpu   # CUDA machine
+uv sync --extra gpu
 ```
 For CPU machine:
 ```bash
-uv sync --extra cpu   # no GPU
+uv sync --extra cpu
 ```
