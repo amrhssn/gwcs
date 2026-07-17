@@ -26,6 +26,7 @@ cpu = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
+    "src/configs",
     "src/data",
     "src/eval",
     "src/model",
