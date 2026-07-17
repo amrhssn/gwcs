@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pytest
 import torch
 
@@ -8,11 +10,11 @@ from tests.model.conftest import GridGraph, KernelBank
 
 @pytest.mark.parametrize("conv_layer_type", ["GCNConv", "SAGEConv", "GATConv", "GINConv"])
 @pytest.mark.parametrize("num_channels", [1, 3])
-@pytest.mark.parametrize("igwt_mode", ["exact", "chebyshev"])
+@pytest.mark.parametrize("gwt_mode", ["exact", "chebyshev"])
 def test_forward_shape(
         grid_graph: GridGraph,
         kernel_bank: KernelBank,
-        igwt_mode: str,
+        gwt_mode: Literal["chebyshev", "exact"],
         num_channels: int,
         conv_layer_type: str,
 ) -> None:
@@ -32,7 +34,7 @@ def test_forward_shape(
     activation_fn="relu",
     conv_layer_type=conv_layer_type,
     processor_num_layers=2,
-    igwt_mode=igwt_mode,
+    gwt_mode=gwt_mode,
   ).to(torch.float64)
 
   x_hat = model(

@@ -19,7 +19,7 @@ class NeuralInverseGraphWaveletTransform(torch.nn.Module):
           activation_fn: str,
           conv_layer_type: str,
           processor_num_layers: int,
-          igwt_mode: Literal["chebyshev", "exact"],
+          gwt_mode: Literal["chebyshev", "exact"],
           spectral_kernels: list[Callable[[torch.Tensor], torch.Tensor]],
           spectrum_lower_bound: float = 0.0,
           spectrum_upper_bound: float = 2.0,
@@ -30,7 +30,7 @@ class NeuralInverseGraphWaveletTransform(torch.nn.Module):
     self.num_filters = len(spectral_kernels)
     self.spectral_kernels = spectral_kernels
     self.hidden_dim = hidden_dim
-    self.igwt_mode = igwt_mode
+    self.gwt_mode = gwt_mode
     self.spectrum_lower_bound = spectrum_lower_bound
     self.spectrum_upper_bound = spectrum_upper_bound
     self.chebyshev_degree = chebyshev_degree
@@ -128,7 +128,7 @@ class NeuralInverseGraphWaveletTransform(torch.nn.Module):
     processed_flat = processed_inputs.reshape(num_nodes, num_channels * hidden_dim)
 
     with torch.no_grad():
-      if self.igwt_mode == "exact":
+      if self.gwt_mode == "exact":
         x_hat_igwt = exact_sgwt.synthesis(
           wavelet_coeffs=sparse_gwt_coeffs,
           symmetric_normalized_laplacian=symmetric_normalized_laplacian,
