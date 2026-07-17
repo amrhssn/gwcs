@@ -1,5 +1,6 @@
 import time
 import math
+from pathlib import Path
 from typing import Literal
 
 import torch
@@ -11,11 +12,13 @@ from data.types import (
   SignalGenerationConfig,
   GraphWaveletTransformConfig
 )
-from steps.data_generation import generate_abl_dataset
+from steps.data_generation import load_or_generate_abl_dataset
 from steps.training import run_epoch, forward_batch
 from model.nigwt import NeuralInverseGraphWaveletTransform
 from model.loss import reconstruction_loss
 from eval.utils import relative_error
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
@@ -62,7 +65,7 @@ def main():
   train_ratio = 0.6
   val_ratio = 0.2
   batch_size = 16
-  num_epochs = 1_000
+  num_epochs = 100
 
   # initializing configs
   graph_config = GraphGenerationConfig(graph_types=graph_types,
@@ -82,10 +85,11 @@ def main():
                                            num_scales=num_scales,
                                            num_filters=num_filters,
                                            scales=scales)
-  dataset = generate_abl_dataset(graph_config=graph_config,
-                                 signal_config=signal_config,
-                                 gwt_config=gwt_config,
-                                 random_generator=random_generator)
+  dataset = load_or_generate_abl_dataset(cache_root=REPO_ROOT / "datasets" / "ABL",
+                                         graph_config=graph_config,
+                                         signal_config=signal_config,
+                                         gwt_config=gwt_config,
+                                         random_generator=random_generator)
   train_dataset, val_dataset, test_dataset = split_dataset(dataset=dataset,
                                                            train_ratio=train_ratio,
                                                            val_ratio=val_ratio,
