@@ -29,6 +29,7 @@ class SignalGenerationConfig:
 
 @dataclass(frozen=True)
 class GraphWaveletTransformConfig:
+    gwt_mode: Literal["chebyshev", "exact"]
     spectrum_lower_bound: float
     spectrum_upper_bound: float
     scaling_kernel_bandwidth_ratio: float
