@@ -12,9 +12,10 @@ from data.types import (
   GraphWaveletTransformConfig
 )
 from steps.data_generation import generate_abl_dataset
-from sampler.mlis_vectorized import multilevel_importance_sampling
+from steps.training import run_epoch, forward_batch
 from model.nigwt import NeuralInverseGraphWaveletTransform
 from model.loss import reconstruction_loss
+from eval.utils import relative_error
 
 
 def main():
@@ -61,7 +62,7 @@ def main():
   train_ratio = 0.6
   val_ratio = 0.2
   batch_size = 16
-  num_epochs = 10_000
+  num_epochs = 1_000
 
   # initializing configs
   graph_config = GraphGenerationConfig(graph_types=graph_types,
@@ -114,34 +115,28 @@ def main():
   # training loop
   for epoch in range(num_epochs):
     epoch_start = time.perf_counter()
-    model.train()
-    epoch_loss = []
-    for batch_idx, batch in enumerate(train_loader):
-      batch = batch.to(device)
-      sparsification_mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
-                                                           keep_ratio=keep_ratio,
-                                                           batch=batch.batch,
-                                                           random_generator=random_generator)
-      sparse_gwt_coeffs = batch.gwt_coeffs * sparsification_mask
-      x_hat = model(
-        sparse_gwt_coeffs=sparse_gwt_coeffs,
-        sparsification_mask=sparsification_mask,
-        edge_index=batch.edge_index,
-        symmetric_normalized_laplacian=batch.symmetric_normalized_laplacian(),
-        rescaled_symmetric_normalized_laplacian=batch.rescaled_symmetric_normalized_laplacian(),
-      )
-      batch_loss = reconstruction_loss(x_hat=x_hat, x=batch.x)
-      optimizer.zero_grad()
-      batch_loss.backward()
-      torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-      optimizer.step()
-
-      epoch_loss.append(batch_loss.item())
-    epoch_loss = sum(epoch_loss) / len(epoch_loss)
+    train_loss = run_epoch(loader=train_loader, model=model, device=device, metric_fn=reconstruction_loss,
+                           keep_ratio=keep_ratio, random_generator=random_generator, optimizer=optimizer)
+    val_loss = run_epoch(loader=val_loader, model=model, device=device, metric_fn=reconstruction_loss,
+                         keep_ratio=keep_ratio, random_generator=random_generator)
     epoch_time = time.perf_counter() - epoch_start
     print(f"[*] Epoch: {epoch:5d} | "
-          f" Epoch Loss: {epoch_loss:.4f} | "  
+          f"Train Loss: {train_loss:.4f} | "
+          f"Val Loss: {val_loss:.4f} | "
           f"Time: {epoch_time:.2f}s")
+
+  # test phase
+  model.eval()
+  test_losses, test_errors = [], []
+  with torch.no_grad():
+    for batch in test_loader:
+      batch = batch.to(device)
+      x_hat = forward_batch(model=model, batch=batch, keep_ratio=keep_ratio, random_generator=random_generator)
+      test_losses.append(reconstruction_loss(x_hat=x_hat, x=batch.x).item())
+      test_errors.append(relative_error(reconstructed=x_hat, signal=batch.x))
+  test_loss = sum(test_losses) / len(test_losses)
+  test_error = sum(test_errors) / len(test_errors)
+  print(f"[*] Test Loss: {test_loss:.4f} | Test Relative Error: {test_error:.4f}")
 
 
 if __name__ == "__main__":
