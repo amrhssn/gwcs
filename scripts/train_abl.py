@@ -12,6 +12,7 @@ from data.types import (
 )
 from steps.data_generation import generate_abl_dataset
 from sampler.mlis_vectorized import multilevel_importance_sampling
+from model.nigwt import NeuralInverseGraphWaveletTransform
 
 
 def main():
@@ -19,6 +20,7 @@ def main():
 
   # run configs
   seed = 42
+  torch.manual_seed(seed)  # nn.Module weight init has no generator hook, so this is the only way to seed it
   random_generator: torch.Generator | None = torch.Generator().manual_seed(seed)
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -33,6 +35,7 @@ def main():
   coeffs_std_range = (1.0, 2.0)
   noise_level_range = (0.05, 0.2)
   # gwt configs
+  gwt_mode: Literal['chebyshev', 'exact'] = 'chebyshev'
   spectrum_lower_bound = 0.0  # true minimum eigenvalue of L_sym, L_rw
   spectrum_upper_bound = 2.0  # true maximum eigenvalue of L_sym, L_rw
   scaling_kernel_bandwidth_ratio = 50
@@ -43,6 +46,12 @@ def main():
   scales = torch.logspace(math.log10(1 / spectrum_upper_bound),
                           math.log10(1 / scaling_kernel_cutoff_eigenvalue),
                           num_scales).tolist()
+  # model
+  hidden_dim = 128
+  activation_fn = 'relu'
+  conv_layer_type = 'SAGEConv'
+  processor_num_layers = 5
+
   # training
   train_ratio = 0.6
   val_ratio = 0.2
@@ -58,7 +67,8 @@ def main():
                                          coeffs_mean=coeffs_mean,
                                          coeffs_std_range=coeffs_std_range,
                                          noise_level_range=noise_level_range)
-  gwt_config = GraphWaveletTransformConfig(spectrum_lower_bound=spectrum_lower_bound,
+  gwt_config = GraphWaveletTransformConfig(gwt_mode=gwt_mode,
+                                           spectrum_lower_bound=spectrum_lower_bound,
                                            spectrum_upper_bound=spectrum_upper_bound,
                                            scaling_kernel_bandwidth_ratio=scaling_kernel_bandwidth_ratio,
                                            scaling_kernel_cutoff_eigenvalue=scaling_kernel_cutoff_eigenvalue,
@@ -83,12 +93,28 @@ def main():
   val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False)
   test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
+  # initializing the model
+  model = NeuralInverseGraphWaveletTransform(
+    num_channels=dataset.num_channels,
+    hidden_dim=hidden_dim,
+    activation_fn=activation_fn,
+    conv_layer_type=conv_layer_type,
+    processor_num_layers=processor_num_layers,
+    gwt_mode=dataset.configs.gwt_config.gwt_mode,
+    spectral_kernels=dataset.spectral_kernels,
+    spectrum_lower_bound=dataset.configs.gwt_config.spectrum_lower_bound,
+    spectrum_upper_bound=dataset.configs.gwt_config.spectrum_upper_bound,
+    chebyshev_degree=dataset.configs.gwt_config.chebyshev_degree
+  ).to(device)
+
   # training loop
   for epoch in range(num_epochs):
     for batch_idx, batch in enumerate(train_loader):
       mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
                                             keep_ratio=0.01,
-                                            batch=batch.batch)
+                                            batch=batch.batch,
+                                            random_generator=random_generator)
+
       break
     break
 
