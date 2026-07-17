@@ -1,0 +1,161 @@
+{
+  "turbulent": {
+    "dataset": "turbulent",
+    "processed_path": "/path/to/your/graph_wavelet_compressed_sensing/local_storage/datasets/turbulent_radiative_layer_2D/processed/20260204_193616",
+    "splits": {
+      "train": {
+        "num_samples": 7272,
+        "num_nodes": 49152,
+        "grid_shape": [
+          128,
+          384
+        ],
+        "num_fields": 4,
+        "field_names": [
+          "density",
+          "pressure",
+          "velocity_x",
+          "velocity_y"
+        ]
+      },
+      "valid": {
+        "num_samples": 909,
+        "num_nodes": 49152,
+        "grid_shape": [
+          128,
+          384
+        ],
+        "num_fields": 4,
+        "field_names": [
+          "density",
+          "pressure",
+          "velocity_x",
+          "velocity_y"
+        ]
+      },
+      "test": {
+        "num_samples": 909,
+        "num_nodes": 49152,
+        "grid_shape": [
+          128,
+          384
+        ],
+        "num_fields": 4,
+        "field_names": [
+          "density",
+          "pressure",
+          "velocity_x",
+          "velocity_y"
+        ]
+      }
+    }
+  },
+  "pbfm": {
+    "dataset": "pbfm",
+    "processed_path": "/path/to/your/graph_wavelet_compressed_sensing/local_storage/datasets/pbfm/processed/20260321_235358",
+    "splits": {
+      "train": {
+        "num_samples": 25600,
+        "num_nodes": 16384,
+        "grid_shape": [
+          128,
+          128
+        ],
+        "num_fields": 2,
+        "field_names": [
+          "velocity_x",
+          "velocity_y"
+        ]
+      },
+      "valid": {
+        "num_samples": 7168,
+        "num_nodes": 16384,
+        "grid_shape": [
+          128,
+          128
+        ],
+        "num_fields": 2,
+        "field_names": [
+          "velocity_x",
+          "velocity_y"
+        ]
+      },
+      "test": {
+        "num_samples": 16384,
+        "num_nodes": 16384,
+        "grid_shape": [
+          128,
+          128
+        ],
+        "num_fields": 2,
+        "field_names": [
+          "velocity_x",
+          "velocity_y"
+        ]
+      }
+    }
+  },
+  "viscoelastic": {
+    "dataset": "viscoelastic",
+    "processed_path": "/path/to/your/graph_wavelet_compressed_sensing/local_storage/datasets/viscoelastic_instability/processed/20260328_205345",
+    "splits": {
+      "train": {
+        "num_samples": 6700,
+        "num_nodes": 91136,
+        "grid_shape": [
+          178,
+          512
+        ],
+        "num_fields": 8,
+        "field_names": [
+          "pressure",
+          "c_zz",
+          "velocity_x",
+          "velocity_y",
+          "C_xx",
+          "C_xy",
+          "C_yx",
+          "C_yy"
+        ]
+      },
+      "valid": {
+        "num_samples": 680,
+        "num_nodes": 91136,
+        "grid_shape": [
+          178,
+          512
+        ],
+        "num_fields": 8,
+        "field_names": [
+          "pressure",
+          "c_zz",
+          "velocity_x",
+          "velocity_y",
+          "C_xx",
+          "C_xy",
+          "C_yx",
+          "C_yy"
+        ]
+      },
+      "test": {
+        "num_samples": 680,
+        "num_nodes": 91136,
+        "grid_shape": [
+          178,
+          512
+        ],
+        "num_fields": 8,
+        "field_names": [
+          "pressure",
+          "c_zz",
+          "velocity_x",
+          "velocity_y",
+          "C_xx",
+          "C_xy",
+          "C_yx",
+          "C_yy"
+        ]
+      }
+    }
+  }
+}
