@@ -26,7 +26,7 @@ def main():
 
   # run configs
   seed = 42
-  torch.manual_seed(seed)  # nn.Module weight init has no generator hook, so this is the only way to seed it
+  torch.manual_seed(seed)
   random_generator: torch.Generator | None = torch.Generator().manual_seed(seed)
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -65,7 +65,12 @@ def main():
   train_ratio = 0.6
   val_ratio = 0.2
   batch_size = 16
-  num_epochs = 100
+  num_epochs = 1000
+  lr_scheduler_factor = 0.5
+  lr_scheduler_patience = 50
+  lr_scheduler_min_lr = 1e-6
+  early_stopping_patience = 150
+  early_stopping_min_delta = 1e-4
 
   # initializing configs
   graph_config = GraphGenerationConfig(graph_types=graph_types,
@@ -115,19 +120,37 @@ def main():
     chebyshev_degree=dataset.configs.gwt_config.chebyshev_degree
   ).to(device)
   optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+  lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=lr_scheduler_factor,
+                                                            patience=lr_scheduler_patience,
+                                                            min_lr=lr_scheduler_min_lr)
+  best_val_loss = float('inf')
+  best_epoch = 0
+  epochs_without_improvement = 0
 
   # training loop
   for epoch in range(num_epochs):
     epoch_start = time.perf_counter()
-    train_loss = run_epoch(loader=train_loader, model=model, device=device, metric_fn=reconstruction_loss,
+    train_loss = run_epoch(loader=train_loader, model=model, device=device, loss_fn=reconstruction_loss,
                            keep_ratio=keep_ratio, random_generator=random_generator, optimizer=optimizer)
-    val_loss = run_epoch(loader=val_loader, model=model, device=device, metric_fn=reconstruction_loss,
+    val_loss = run_epoch(loader=val_loader, model=model, device=device, loss_fn=reconstruction_loss,
                          keep_ratio=keep_ratio, random_generator=random_generator)
     epoch_time = time.perf_counter() - epoch_start
     print(f"[*] Epoch: {epoch:5d} | "
           f"Train Loss: {train_loss:.4f} | "
           f"Val Loss: {val_loss:.4f} | "
           f"Time: {epoch_time:.2f}s")
+
+    lr_scheduler.step(val_loss)
+    if val_loss < best_val_loss - early_stopping_min_delta:
+      best_val_loss = val_loss
+      best_epoch = epoch
+      epochs_without_improvement = 0
+    else:
+      epochs_without_improvement += 1
+      if epochs_without_improvement >= early_stopping_patience:
+        print(f"[*] Early stopping at epoch: {epoch} "
+              f"(best val loss: {best_val_loss:.4f} at epoch {best_epoch})")
+        break
 
   # test phase
   model.eval()
