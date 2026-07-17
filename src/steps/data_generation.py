@@ -180,7 +180,9 @@ def load_or_generate_abl_dataset(
     print(f"[*] Loading cached dataset: {cache_dir.name}")
     samples = torch.load(cache_dir / "samples.pt", weights_only=False)
     cached_configs = _load_configs(cache_dir / "config.json")
-    return ABLGraphSignalDataset(samples=samples, configs=cached_configs)
+    dataset = ABLGraphSignalDataset(samples=samples, configs=cached_configs)
+    dataset.dataset_dir = cache_dir
+    return dataset
 
   dataset = generate_abl_dataset(graph_config=graph_config, signal_config=signal_config,
                                  gwt_config=gwt_config, device=device, random_generator=random_generator)
@@ -191,4 +193,5 @@ def load_or_generate_abl_dataset(
   torch.save(dataset.samples, cache_dir / "samples.pt")
   (cache_dir / "config.json").write_text(json.dumps(asdict(configs), indent=2, sort_keys=True))
   print(f"[*] Saved dataset: {cache_dir.name}")
+  dataset.dataset_dir = cache_dir
   return dataset

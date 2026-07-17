@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from torch_geometric.data import (
   Data,
@@ -48,6 +50,7 @@ class ABLGraphSignalDataset(InMemoryDataset):
     self.num_filters = self._data.gwt_coeffs.shape[-1]
     self.spectral_kernels = default_kernels(minimum_eigenvalue=configs.gwt_config.scaling_kernel_cutoff_eigenvalue,
                                             scales=configs.gwt_config.scales)
+    self.dataset_dir: Path | None = None
 
   def get_sample(
           self,

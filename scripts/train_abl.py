@@ -1,5 +1,7 @@
 import time
 import math
+import json
+import logging
 from pathlib import Path
 from typing import Literal
 
@@ -95,6 +97,37 @@ def main():
                                          signal_config=signal_config,
                                          gwt_config=gwt_config,
                                          random_generator=random_generator)
+  # run directory: logs, configs, checkpoint, and loss history for this run
+  run_dir = REPO_ROOT / "runs" / "ABL" / time.strftime("%Y%m%d-%H%M%S")
+  run_dir.mkdir(parents=True)
+  logging.basicConfig(level=logging.INFO, format="%(message)s",
+                      handlers=[logging.StreamHandler(), logging.FileHandler(run_dir / "train.log")])
+  (run_dir / "config.json").write_text(json.dumps({
+    "seed": seed,
+    "device": str(device),
+    "dataset_dir": str(dataset.dataset_dir.relative_to(REPO_ROOT)),
+    "model": {
+      "hidden_dim": hidden_dim,
+      "activation_fn": activation_fn,
+      "conv_layer_type": conv_layer_type,
+      "processor_num_layers": processor_num_layers,
+      "keep_ratio": keep_ratio,
+    },
+    "training": {
+      "lr": lr,
+      "weight_decay": weight_decay,
+      "train_ratio": train_ratio,
+      "val_ratio": val_ratio,
+      "batch_size": batch_size,
+      "num_epochs": num_epochs,
+      "lr_scheduler_factor": lr_scheduler_factor,
+      "lr_scheduler_patience": lr_scheduler_patience,
+      "lr_scheduler_min_lr": lr_scheduler_min_lr,
+      "early_stopping_patience": early_stopping_patience,
+      "early_stopping_min_delta": early_stopping_min_delta,
+    },
+  }, indent=2))
+
   train_dataset, val_dataset, test_dataset = split_dataset(dataset=dataset,
                                                            train_ratio=train_ratio,
                                                            val_ratio=val_ratio,
@@ -126,6 +159,7 @@ def main():
   best_val_loss = float('inf')
   best_epoch = 0
   epochs_without_improvement = 0
+  history = []
 
   # training loop
   for epoch in range(num_epochs):
@@ -135,22 +169,26 @@ def main():
     val_loss = run_epoch(loader=val_loader, model=model, device=device, loss_fn=reconstruction_loss,
                          keep_ratio=keep_ratio, random_generator=random_generator)
     epoch_time = time.perf_counter() - epoch_start
-    print(f"[*] Epoch: {epoch:5d} | "
-          f"Train Loss: {train_loss:.4f} | "
-          f"Val Loss: {val_loss:.4f} | "
-          f"Time: {epoch_time:.2f}s")
+    history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss})
+    logging.info(f"[*] Epoch: {epoch:5d} | "
+                f"Train Loss: {train_loss:.4f} | "
+                f"Val Loss: {val_loss:.4f} | "
+                f"Time: {epoch_time:.2f}s")
 
     lr_scheduler.step(val_loss)
     if val_loss < best_val_loss - early_stopping_min_delta:
       best_val_loss = val_loss
       best_epoch = epoch
       epochs_without_improvement = 0
+      torch.save(model.state_dict(), run_dir / "checkpoint_best.pt")
     else:
       epochs_without_improvement += 1
       if epochs_without_improvement >= early_stopping_patience:
-        print(f"[*] Early stopping at epoch: {epoch} "
-              f"(best val loss: {best_val_loss:.4f} at epoch {best_epoch})")
+        logging.info(f"[*] Early stopping at epoch: {epoch} "
+                    f"(best val loss: {best_val_loss:.4f} at epoch {best_epoch})")
         break
+
+  (run_dir / "history.json").write_text(json.dumps(history, indent=2))
 
   # test phase
   model.eval()
@@ -163,7 +201,14 @@ def main():
       test_errors.append(relative_error(reconstructed=x_hat, signal=batch.x))
   test_loss = sum(test_losses) / len(test_losses)
   test_error = sum(test_errors) / len(test_errors)
-  print(f"[*] Test Loss: {test_loss:.4f} | Test Relative Error: {test_error:.4f}")
+  logging.info(f"[*] Test Loss: {test_loss:.4f} | Test Relative Error: {test_error:.4f}")
+
+  (run_dir / "summary.json").write_text(json.dumps({
+    "best_epoch": best_epoch,
+    "best_val_loss": best_val_loss,
+    "test_loss": test_loss,
+    "test_error": test_error,
+  }, indent=2))
 
 
 if __name__ == "__main__":
