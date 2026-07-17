@@ -163,18 +163,18 @@ def _load_configs(path: Path) -> GenerationConfig:
 
 
 def load_or_generate_abl_dataset(
-        cache_root: Path,
+        dataset_dir: Path,
         graph_config: GraphGenerationConfig,
         signal_config: SignalGenerationConfig,
         gwt_config: GraphWaveletTransformConfig,
         device: torch.device | None = None,
         random_generator: torch.Generator | None = None,
 ) -> ABLGraphSignalDataset:
-  cache_root.mkdir(parents=True, exist_ok=True)
+  dataset_dir.mkdir(parents=True, exist_ok=True)
   configs = GenerationConfig(graph_config=graph_config, signal_config=signal_config, gwt_config=gwt_config)
   cache_key = _cache_key(configs)
 
-  matches = sorted(cache_root.glob(f"*_{cache_key}"))
+  matches = sorted(dataset_dir.glob(f"*_{cache_key}"))
   if matches:
     cache_dir = matches[-1]
     print(f"[*] Loading cached dataset: {cache_dir.name}")
@@ -186,9 +186,9 @@ def load_or_generate_abl_dataset(
 
   dataset = generate_abl_dataset(graph_config=graph_config, signal_config=signal_config,
                                  gwt_config=gwt_config, device=device, random_generator=random_generator)
-  timestamp = time.strftime("%Y%m%d-%H%M%S")
+  timestamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
   short_config = _short_config_str(graph_config, signal_config, gwt_config)
-  cache_dir = cache_root / f"{timestamp}_{short_config}_{cache_key}"
+  cache_dir = dataset_dir / f"{timestamp}_{short_config}_{cache_key}"
   cache_dir.mkdir(parents=True)
   torch.save(dataset.samples, cache_dir / "samples.pt")
   (cache_dir / "config.json").write_text(json.dumps(asdict(configs), indent=2, sort_keys=True))
