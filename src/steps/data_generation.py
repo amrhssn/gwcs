@@ -13,7 +13,8 @@ from data.types import (
 )
 from data.dataset import ABLGraphSignalDataset
 from transform.kernels import default_kernels
-from transform.exact_sgwt import analysis
+from transform.exact_sgwt import analysis as exact_analysis
+from transform.chebyshev_sgwt import analysis as chebyshev_analysis
 
 
 
@@ -107,11 +108,19 @@ def generate_abl_dataset(
                                              eigenvector=graph.eigenvectors,
                                              noise_level=noise_level,
                                              random_generator=random_generator)
-      gwt_coeffs = analysis(signal=abl_signal.x,
-                            symmetric_normalized_laplacian=graph.symmetric_normalized_laplacian,
-                            spectral_kernels=spectral_kernels,
-                            eigenvalues=graph.eigenvalues,
-                            eigenvectors=graph.eigenvectors)
+      if gwt_config.gwt_mode == "exact":
+        gwt_coeffs = exact_analysis(signal=abl_signal.x,
+                                    symmetric_normalized_laplacian=graph.symmetric_normalized_laplacian,
+                                    spectral_kernels=spectral_kernels,
+                                    eigenvalues=graph.eigenvalues,
+                                    eigenvectors=graph.eigenvectors)
+      else:
+        gwt_coeffs = chebyshev_analysis(signal=abl_signal.x,
+                                        symmetric_normalized_laplacian=graph.symmetric_normalized_laplacian,
+                                        spectral_kernels=spectral_kernels,
+                                        spectrum_lower_bound=gwt_config.spectrum_lower_bound,
+                                        spectrum_upper_bound=gwt_config.spectrum_upper_bound,
+                                        chebyshev_degree=gwt_config.chebyshev_degree)
       sample = ABLGraphSignalSample(graph=graph,
                                     signal=abl_signal,
                                     gwt_coeffs=gwt_coeffs)
