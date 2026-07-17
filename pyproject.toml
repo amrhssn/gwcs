@@ -31,6 +31,7 @@ packages = [
     "src/eval",
     "src/model",
     "src/steps",
+    "src/tracker.py",
     "src/transform",
     "src/visualization",
 ]
