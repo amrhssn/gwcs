@@ -42,6 +42,7 @@ def _allocate_with_capacity(
 def _mlis_single_graph_single_column(
         coeffs: torch.Tensor,
         keep_ratio: float,
+        random_generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     num_nodes, num_filters = coeffs.shape
     total_coeffs = num_nodes * num_filters
@@ -64,9 +65,11 @@ def _mlis_single_graph_single_column(
 
         p = squared_coeffs[:, s]
         if p.sum() == 0:
-            samples = torch.randperm(num_nodes, device=coeffs.device)[:num_samples]
+            samples = torch.randperm(num_nodes, generator=random_generator)[:num_samples].to(coeffs.device)
         else:
-            samples = torch.multinomial(p, num_samples=num_samples, replacement=False)
+            samples = torch.multinomial(
+                p.cpu(), num_samples=num_samples, replacement=False, generator=random_generator,
+            ).to(coeffs.device)
 
         mask[samples, s] = 1.0
 
@@ -77,6 +80,7 @@ def multilevel_importance_sampling(
         coeffs: torch.Tensor,
         keep_ratio: float,
         batch: torch.Tensor | None = None,
+        random_generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     num_nodes = coeffs.shape[0]
     num_filters = coeffs.shape[-1]
@@ -99,6 +103,7 @@ def multilevel_importance_sampling(
             mask_flat[node_idx, col, :] = _mlis_single_graph_single_column(
                 coeffs=coeffs_flat[node_idx, col, :],
                 keep_ratio=keep_ratio,
+                random_generator=random_generator,
             )
 
     return mask_flat.reshape(coeffs.shape)

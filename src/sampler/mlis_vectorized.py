@@ -92,6 +92,7 @@ def multilevel_importance_sampling(
         coeffs: torch.Tensor,
         keep_ratio: float,
         batch: torch.Tensor | None = None,
+        random_generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     device = coeffs.device
     num_nodes = coeffs.shape[0]
@@ -121,7 +122,9 @@ def multilevel_importance_sampling(
     allocation = allocation.reshape(num_graphs, num_columns, num_filters)
 
     eps = torch.finfo(dense_coeffs.dtype).tiny
-    uniform_draws = torch.rand(num_graphs, max_nodes, num_columns, num_filters, device=device)
+    uniform_draws = torch.rand(
+        num_graphs, max_nodes, num_columns, num_filters, generator=random_generator,
+    ).to(device)
     keys = torch.log(uniform_draws) / (squared + eps)
     keys = keys.masked_fill(~valid_mask[:, :, None, None], float("-inf"))
 
