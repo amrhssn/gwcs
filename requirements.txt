@@ -1,0 +1,27 @@
+# PyTorch and PyTorch Geometric - install separately (see README.md)
+# torch>=2.0.0
+# torch-geometric>=2.3.0
+# torch-scatter
+# torch-sparse
+# torch-cluster
+
+# Scientific Computing
+numpy==2.3.4
+scipy>=1.10.0
+
+# Graph Analysis
+networkx==3.5
+
+# Visualization
+matplotlib==3.10.7
+
+# Utilities
+tqdm>=4.65.0
+
+# Domain-Specific Datasets
+the-well>=0.1.0
+tensorflow>=2.12.0
+# Note: Use tensorflow-cpu>=2.12.0 if GPU not needed for TensorFlow operations
+
+python-dotenv
+boto3
