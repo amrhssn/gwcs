@@ -51,6 +51,7 @@ def main():
   activation_fn = 'relu'
   conv_layer_type = 'SAGEConv'
   processor_num_layers = 5
+  keep_ratio = 0.01
 
   # training
   train_ratio = 0.6
@@ -110,10 +111,18 @@ def main():
   # training loop
   for epoch in range(num_epochs):
     for batch_idx, batch in enumerate(train_loader):
-      mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
-                                            keep_ratio=0.01,
-                                            batch=batch.batch,
-                                            random_generator=random_generator)
+      sparsification_mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
+                                                           keep_ratio=keep_ratio,
+                                                           batch=batch.batch,
+                                                           random_generator=random_generator)
+      sparse_gwt_coeffs = batch.gwt_coeffs * sparsification_mask
+      x_hat = model(
+        sparse_gwt_coeffs=sparse_gwt_coeffs,
+        sparsification_mask=sparsification_mask,
+        edge_index=batch.edge_index,
+        symmetric_normalized_laplacian=batch.symmetric_normalized_laplacian(),
+        rescaled_symmetric_normalized_laplacian=batch.rescaled_symmetric_normalized_laplacian(),
+      )
 
       break
     break
