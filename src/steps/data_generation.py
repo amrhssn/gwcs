@@ -80,6 +80,8 @@ def generate_abl_dataset(
         random_generator: torch.Generator | None = None,
 ) -> ABLGraphSignalDataset:
   samples: list[ABLGraphSignalSample] = []
+  spectral_kernels = default_kernels(minimum_eigenvalue=gwt_config.scaling_kernel_cutoff_eigenvalue,
+                                     scales=gwt_config.scales)
   for graph_type in graph_config.graph_types:
     for graph_idx in range(graph_config.num_graphs_per_type):
       # graph parameters
@@ -94,9 +96,6 @@ def generate_abl_dataset(
                                                                 random_generator=random_generator)
       noise_level = _generate_abl_signal_noise_level(signal_config=signal_config,
                                                      random_generator=random_generator)
-      # gwt param
-      spectral_kernels = default_kernels(minimum_eigenvalue=gwt_config.scaling_kernel_cutoff_eigenvalue,
-                                         scales=gwt_config.scales)
 
       # generation
       graph = generate_graph(graph_type=graph_type,
