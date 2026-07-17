@@ -1,3 +1,4 @@
+import time
 import math
 from typing import Literal
 
@@ -13,6 +14,7 @@ from data.types import (
 from steps.data_generation import generate_abl_dataset
 from sampler.mlis_vectorized import multilevel_importance_sampling
 from model.nigwt import NeuralInverseGraphWaveletTransform
+from model.loss import reconstruction_loss
 
 
 def main():
@@ -40,7 +42,7 @@ def main():
   spectrum_upper_bound = 2.0  # true maximum eigenvalue of L_sym, L_rw
   scaling_kernel_bandwidth_ratio = 50
   scaling_kernel_cutoff_eigenvalue = spectrum_upper_bound / scaling_kernel_bandwidth_ratio
-  chebyshev_degree = 30
+  chebyshev_degree = 100
   num_scales = 4
   num_filters = num_scales + 1
   scales = torch.logspace(math.log10(1 / spectrum_upper_bound),
@@ -51,13 +53,15 @@ def main():
   activation_fn = 'relu'
   conv_layer_type = 'SAGEConv'
   processor_num_layers = 5
-  keep_ratio = 0.01
+  keep_ratio = 1.0
+  lr = 1e-3
+  weight_decay = 5e-4
 
   # training
   train_ratio = 0.6
   val_ratio = 0.2
   batch_size = 16
-  num_epochs = 100
+  num_epochs = 10_000
 
   # initializing configs
   graph_config = GraphGenerationConfig(graph_types=graph_types,
@@ -77,11 +81,9 @@ def main():
                                            num_scales=num_scales,
                                            num_filters=num_filters,
                                            scales=scales)
-  # generating a random dataset
   dataset = generate_abl_dataset(graph_config=graph_config,
                                  signal_config=signal_config,
                                  gwt_config=gwt_config,
-                                 device=device,
                                  random_generator=random_generator)
   train_dataset, val_dataset, test_dataset = split_dataset(dataset=dataset,
                                                            train_ratio=train_ratio,
@@ -94,7 +96,7 @@ def main():
   val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False)
   test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
-  # initializing the model
+  # initializing the model, optimizer, and schedulers
   model = NeuralInverseGraphWaveletTransform(
     num_channels=dataset.num_channels,
     hidden_dim=hidden_dim,
@@ -107,10 +109,15 @@ def main():
     spectrum_upper_bound=dataset.configs.gwt_config.spectrum_upper_bound,
     chebyshev_degree=dataset.configs.gwt_config.chebyshev_degree
   ).to(device)
+  optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
   # training loop
   for epoch in range(num_epochs):
+    epoch_start = time.perf_counter()
+    model.train()
+    epoch_loss = []
     for batch_idx, batch in enumerate(train_loader):
+      batch = batch.to(device)
       sparsification_mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
                                                            keep_ratio=keep_ratio,
                                                            batch=batch.batch,
@@ -123,9 +130,18 @@ def main():
         symmetric_normalized_laplacian=batch.symmetric_normalized_laplacian(),
         rescaled_symmetric_normalized_laplacian=batch.rescaled_symmetric_normalized_laplacian(),
       )
+      batch_loss = reconstruction_loss(x_hat=x_hat, x=batch.x)
+      optimizer.zero_grad()
+      batch_loss.backward()
+      torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+      optimizer.step()
 
-      break
-    break
+      epoch_loss.append(batch_loss.item())
+    epoch_loss = sum(epoch_loss) / len(epoch_loss)
+    epoch_time = time.perf_counter() - epoch_start
+    print(f"[*] Epoch: {epoch:5d} | "
+          f" Epoch Loss: {epoch_loss:.4f} | "  
+          f"Time: {epoch_time:.2f}s")
 
 
 if __name__ == "__main__":
