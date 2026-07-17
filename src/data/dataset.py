@@ -9,6 +9,7 @@ from data.types import (
   ABLGraphSignalSample,
   GenerationConfig
 )
+from transform.kernels import default_kernels
 
 
 class ABLGraphSignalDataset(InMemoryDataset):
@@ -22,6 +23,10 @@ class ABLGraphSignalDataset(InMemoryDataset):
     self.configs = configs
     data_list = [sample_to_data(sample, sample_idx) for sample_idx, sample in enumerate(self.samples)]
     self.data, self.slices = self.collate(data_list)
+    self.num_channels = self.data.x.shape[-1]
+    self.num_filters = self.data.gwt_coeffs.shape[-1]
+    self.spectral_kernels = default_kernels(minimum_eigenvalue=configs.gwt_config.scaling_kernel_cutoff_eigenvalue,
+                                            scales=configs.gwt_config.scales)
 
   def get_sample(
           self,
