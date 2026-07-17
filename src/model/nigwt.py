@@ -8,7 +8,8 @@ from model.utils import (
   get_activation_module,
   get_gconv_layer,
 )
-from transform import exact_sgwt, chebyshev_sgwt
+from transform.exact_sgwt import synthesis as exact_synthesis
+from transform.chebyshev_sgwt import synthesis as chebyshev_synthesis
 
 
 class NeuralInverseGraphWaveletTransform(torch.nn.Module):
@@ -80,10 +81,16 @@ class NeuralInverseGraphWaveletTransform(torch.nn.Module):
           eigenvectors: torch.Tensor | None = None,
           rescaled_symmetric_normalized_laplacian: torch.Tensor | None = None,
   ) -> torch.Tensor:
-    encoded_inputs = self.encode(sparse_gwt_coeffs, sparsification_mask)
-    processed_inputs = self.process(encoded_inputs, edge_index)
-    x_hat = self.decode(processed_inputs, sparse_gwt_coeffs, symmetric_normalized_laplacian,
-                        eigenvalues, eigenvectors, rescaled_symmetric_normalized_laplacian)
+    encoded_inputs = self.encode(sparse_gwt_coeffs=sparse_gwt_coeffs,
+                                 sparsification_mask=sparsification_mask)
+    processed_inputs = self.process(encoded_inputs=encoded_inputs,
+                                    edge_index=edge_index)
+    x_hat = self.decode(processed_inputs=processed_inputs,
+                        sparse_gwt_coeffs=sparse_gwt_coeffs,
+                        symmetric_normalized_laplacian=symmetric_normalized_laplacian,
+                        eigenvalues=eigenvalues,
+                        eigenvectors=eigenvectors,
+                        rescaled_symmetric_normalized_laplacian=rescaled_symmetric_normalized_laplacian)
     return x_hat
 
   def encode(
@@ -129,7 +136,7 @@ class NeuralInverseGraphWaveletTransform(torch.nn.Module):
 
     with torch.no_grad():
       if self.gwt_mode == "exact":
-        x_hat_igwt = exact_sgwt.synthesis(
+        x_hat_igwt = exact_synthesis(
           wavelet_coeffs=sparse_gwt_coeffs,
           symmetric_normalized_laplacian=symmetric_normalized_laplacian,
           spectral_kernels=self.spectral_kernels,
@@ -137,7 +144,7 @@ class NeuralInverseGraphWaveletTransform(torch.nn.Module):
           eigenvectors=eigenvectors,
         )
       else:
-        x_hat_igwt = chebyshev_sgwt.synthesis(
+        x_hat_igwt = chebyshev_synthesis(
           wavelet_coeffs=sparse_gwt_coeffs,
           symmetric_normalized_laplacian=symmetric_normalized_laplacian,
           spectral_kernels=self.spectral_kernels,
