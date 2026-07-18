@@ -237,9 +237,13 @@ def visualize_graph_reconstruction(
     nodes2 = _draw_graph_panel(ax2, graph, layout, abs_error, 'Reds')
     ax2.set_title(f'Recon Error |x - x_recon| — C{c}', fontsize=TITLE_FONTSIZE)
     fig.colorbar(nodes2, ax=ax2)
+    mse = (abs_error ** 2).mean().item()
+    _add_caption(ax2, f'Max abs error: {abs_error.max().item():.4f} | '
+                      f'MSE: {mse:.4f} | RMSE: {mse ** 0.5:.4f}.')
 
   fig.suptitle(f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT', fontsize=SUPTITLE_FONTSIZE, fontweight='bold')
   fig.tight_layout(rect=(0, 0, 1, 0.96))
+  fig.subplots_adjust(bottom=0.2 / num_channels)
   return fig
 
 
