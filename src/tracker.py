@@ -36,7 +36,8 @@ def create_run_dir(root: Path) -> Path:
 
 
 def setup_logging(run_dir: Path) -> None:
-  logging.basicConfig(level=logging.INFO, format="%(message)s",
+  logging.basicConfig(level=logging.INFO,
+                      format="%(message)s",
                       handlers=[logging.StreamHandler(), logging.FileHandler(run_dir / "train.log")])
 
 
