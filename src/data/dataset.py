@@ -3,7 +3,6 @@ from pathlib import Path
 import torch
 from torch_geometric.data import (
   Data,
-  Dataset,
   InMemoryDataset
 )
 from torch_geometric.utils import to_torch_coo_tensor
@@ -95,7 +94,7 @@ def split_dataset(
         train_ratio: float,
         val_ratio: float,
         random_generator: torch.Generator | None = None,
-) -> tuple[Dataset, Dataset, Dataset]:
+) -> tuple[ABLGraphSignalDataset, ABLGraphSignalDataset, ABLGraphSignalDataset]:
   num_train = int(train_ratio * len(dataset))
   num_val = int(val_ratio * len(dataset))
   perm = torch.randperm(len(dataset), generator=random_generator)
