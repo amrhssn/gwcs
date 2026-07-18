@@ -39,8 +39,11 @@ def run_test_epoch(
 ) -> list[TestSample]:
   model.eval()
   results = []
+  total_batches = len(loader)
+  log_every = max(1, total_batches // 5)
+  logging.info(f"[*] Running test: {total_batches} batches")
   with torch.no_grad():
-    for batch in loader:
+    for batch_idx, batch in enumerate(loader):
       batch = batch.to(device)
       x_hat, mask = forward_batch(model=model, batch=batch, keep_ratio=keep_ratio, random_generator=random_generator)
       for i in range(batch.num_graphs):
@@ -56,6 +59,8 @@ def run_test_epoch(
           loss=loss_fn(reconstructed=reconstructed, signal=signal).item(),
           error=error_fn(reconstructed=reconstructed, signal=signal),
         ))
+      if (batch_idx + 1) % log_every == 0 or (batch_idx + 1) == total_batches:
+        logging.info(f"[*] Test progress: {batch_idx + 1}/{total_batches} batches")
   return results
 
 
