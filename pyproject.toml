@@ -42,6 +42,7 @@ testpaths = ["tests"]
 pythonpath = ["src", "."]
 filterwarnings = [
     "ignore:`torch.jit.script` is deprecated:DeprecationWarning:torch.jit._script",
+    "ignore:Sparse CSR tensor support is in beta state:UserWarning",
 ]
 
 [tool.uv]
