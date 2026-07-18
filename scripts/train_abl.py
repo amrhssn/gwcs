@@ -27,7 +27,7 @@ def main():
   dataset_dir = REPO_ROOT / "datasets" / "ABL"
   run_dir = tracker.create_run_dir(REPO_ROOT / "runs" / "ABL")
   tracker.setup_logging(run_dir)
-  tracker.log_run_info(run_dir=run_dir, dataset_dir=dataset_dir, config=configs)
+  tracker.log_run_info(run_dir=run_dir, dataset_dir=dataset_dir, device=device, config=configs)
 
   # loading/generating dataset
   dataset = load_or_generate_abl_dataset(dataset_dir=dataset_dir,

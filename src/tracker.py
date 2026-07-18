@@ -71,9 +71,10 @@ def setup_logging(run_dir: Path) -> None:
                       handlers=[logging.StreamHandler(), logging.FileHandler(run_dir / "train.log")])
 
 
-def log_run_info(run_dir: Path, dataset_dir: Path, config: Any) -> None:
+def log_run_info(run_dir: Path, dataset_dir: Path, device: torch.device, config: Any) -> None:
   logging.info(f"Run dir: {run_dir}")
   logging.info(f"Dataset dir: {dataset_dir}")
+  logging.info(f"Device: {device}")
   logging.info(f"Config:\n{json.dumps(asdict(config), indent=2)}")
 
 
