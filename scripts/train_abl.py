@@ -91,7 +91,7 @@ def main():
                          keep_ratio=configs.keep_ratio, random_generator=random_generator)
     epoch_time = time.perf_counter() - epoch_start
     history.append(tracker.EpochRecord(epoch=epoch, train_loss=train_loss, val_loss=val_loss))
-    logging.info(f"[*] Epoch: {epoch:5d} | "
+    logging.info(f"Epoch: {epoch:5d} | "
                  f"Train Loss: {train_loss:.4f} | "
                  f"Val Loss: {val_loss:.4f} | "
                  f"Time: {epoch_time:.2f}s")
@@ -102,12 +102,14 @@ def main():
       best_val_loss = val_loss
       best_epoch = epoch
       epochs_without_improvement = 0
-      torch.save(model.state_dict(), run_dir / "checkpoint_best.pt")
+      checkpoint_path = run_dir / "checkpoint_best.pt"
+      torch.save(model.state_dict(), checkpoint_path)
+      logging.info(f"New best val loss: {best_val_loss:.4f} at epoch {best_epoch}; Model saved.")
     else:
       # counting for early stopping
       epochs_without_improvement += 1
       if epochs_without_improvement >= configs.early_stopping_patience:
-        logging.info(f"[*] Early stopping at epoch: {epoch} "
+        logging.info(f"Early stopping at epoch: {epoch} "
                      f"(best val loss: {best_val_loss:.4f} at epoch {best_epoch})")
         break
   # tracking training history
@@ -121,7 +123,7 @@ def main():
 
   test_loss_mean, test_loss_std = tracker.summarize([result.loss for result in test_results])
   test_error_mean, test_error_std = tracker.summarize([result.error for result in test_results])
-  logging.info(f"[*] Test Loss: {test_loss_mean:.4f} +/- {test_loss_std:.4f} | "
+  logging.info(f"Test Loss: {test_loss_mean:.4f} +/- {test_loss_std:.4f} | "
               f"Test Relative Error: {test_error_mean:.4f} +/- {test_error_std:.4f}")
 
   # tracking run summary
