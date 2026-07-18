@@ -34,7 +34,7 @@ packages = [
     "src/steps",
     "src/tracker.py",
     "src/transform",
-    "src/visualization",
+    "src/visualization.py",
 ]
 
 [tool.pytest.ini_options]
