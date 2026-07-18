@@ -49,8 +49,8 @@ def default_abl_configs() -> ABLExperimentConfig:
     seed=42,
     graph_config=GraphGenerationConfig(
       graph_types=['grid'],
-      num_nodes_range=(100, 1_000),
-      num_graphs_per_type=50
+      num_nodes_range=(100, 5_000),
+      num_graphs_per_type=1_000
     ),
     signal_config=SignalGenerationConfig(
       signal_types=['lowpass'],
