@@ -1,6 +1,7 @@
 import torch
 import networkx as nx
 
+
 def is_connected(
         edge_index: torch.Tensor,
         num_nodes: int,
@@ -9,6 +10,17 @@ def is_connected(
   G.add_nodes_from(range(num_nodes))
   G.add_edges_from(edge_index.t().tolist())
   return nx.is_connected(G)
+
+
+def largest_connected_component_nodes(
+        edge_index: torch.Tensor,
+        num_nodes: int,
+) -> torch.Tensor:
+  G = nx.Graph()
+  G.add_nodes_from(range(num_nodes))
+  G.add_edges_from(edge_index.t().tolist())
+  largest = max(nx.connected_components(G), key=len)
+  return torch.tensor(sorted(largest), dtype=torch.long)
 
 
 def compute_eigendecomposition(

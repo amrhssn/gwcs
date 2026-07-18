@@ -49,13 +49,14 @@ def default_abl_configs() -> ABLExperimentConfig:
     seed=42,
     graph_config=GraphGenerationConfig(
       graph_types=['erdos_renyi'],
-      num_nodes_range=(100, 1_000),
+      num_nodes_range=(200, 400),
       num_graphs_per_type=100,
-      erdos_renyi_edge_prob_range=(0.05, 0.2),
+      erdos_renyi_edge_prob_range=(0.005, 0.01),
       barabasi_albert_min_num_edges_per_new_node_range=(1, 2),
       sbm_num_blocks_range=(2, 5),
       sbm_intra_cluster_prob_range=(0.05, 0.15),
-      sbm_inter_cluster_prob_range=(0.01, 0.03)
+      sbm_inter_cluster_prob_range=(0.01, 0.03),
+      return_largest_connected_component=True,
     ),
     signal_config=SignalGenerationConfig(
       signal_types=['lowpass'],

@@ -16,6 +16,7 @@ class GraphGenerationConfig:
   sbm_num_blocks_range: tuple[int, int] | None = None
   sbm_intra_cluster_prob_range: tuple[float, float] | None = None
   sbm_inter_cluster_prob_range: tuple[float, float] | None = None
+  return_largest_connected_component: bool = False
 
 
 @dataclass(frozen=True)

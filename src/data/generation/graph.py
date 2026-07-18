@@ -1,3 +1,4 @@
+import dataclasses
 from typing import Literal
 
 import torch
@@ -14,6 +15,7 @@ from torch_geometric.utils import (
 
 from data.types import (
   GraphGenerationConfig,
+  GraphMetadata,
   GridGraphMetadata,
   ErdosRenyiGraphMetadata,
   BarabasiAlbertGraphMetadata,
@@ -22,11 +24,31 @@ from data.types import (
 )
 from data.utils_graph import (
   is_connected,
+  largest_connected_component_nodes,
   compute_eigendecomposition
 )
 
 
-MAX_CONNECTIVITY_ATTEMPTS = 100
+def _restrict_to_largest_connected_component(
+        edge_index: torch.Tensor,
+        metadata: GraphMetadata,
+) -> tuple[torch.Tensor, GraphMetadata]:
+  kept_nodes = largest_connected_component_nodes(
+    edge_index=edge_index, num_nodes=metadata.num_nodes
+  ).to(edge_index.device)
+
+  node_mapping = torch.full((metadata.num_nodes,), -1, dtype=torch.long, device=edge_index.device)
+  node_mapping[kept_nodes] = torch.arange(kept_nodes.numel(), device=edge_index.device)
+
+  edge_mask = (node_mapping[edge_index[0]] >= 0) & (node_mapping[edge_index[1]] >= 0)
+  restricted_edge_index = node_mapping[edge_index[:, edge_mask]]
+
+  metadata_updates = dict(num_nodes=kept_nodes.numel(), num_edges=restricted_edge_index.size(1))
+  if isinstance(metadata, GridGraphMetadata):
+    metadata_updates["pos"] = [metadata.pos[i] for i in kept_nodes.tolist()]
+  metadata = dataclasses.replace(metadata, **metadata_updates)
+
+  return restricted_edge_index, metadata
 
 
 def grid_graph(
@@ -159,48 +181,46 @@ def generate_graph(
         device: torch.device | None = None,
         random_generator: torch.Generator | None = None,
 ) -> Graph:
-  for attempt in range(MAX_CONNECTIVITY_ATTEMPTS):
-    if graph_type == 'grid':
-      edge_index, metadata = grid_graph(graph_type=graph_type,
-                                        requested_num_nodes=num_nodes,
-                                        device=device)
-    elif graph_type == 'erdos_renyi':
-      assert graph_config.erdos_renyi_edge_prob_range is not None
-      edge_index, metadata = erdos_renyi_graph(graph_type=graph_type,
-                                               requested_num_nodes=num_nodes,
-                                               edge_prob_range=graph_config.erdos_renyi_edge_prob_range,
-                                               device=device,
-                                               random_generator=random_generator)
-    elif graph_type == 'barabasi_albert':
-      assert graph_config.barabasi_albert_min_num_edges_per_new_node_range is not None
-      edge_index, metadata = barabasi_albert_graph(
-        graph_type=graph_type,
-        requested_num_nodes=num_nodes,
-        num_edges_per_new_node_range=graph_config.barabasi_albert_min_num_edges_per_new_node_range,
-        device=device,
-        random_generator=random_generator)
-    elif graph_type == 'sbm':
-      assert graph_config.sbm_num_blocks_range is not None
-      assert graph_config.sbm_intra_cluster_prob_range is not None
-      assert graph_config.sbm_inter_cluster_prob_range is not None
-      edge_index, metadata = stochastic_block_model_graph(
-        graph_type=graph_type,
-        requested_num_nodes=num_nodes,
-        num_blocks_range=graph_config.sbm_num_blocks_range,
-        intra_cluster_prob_range=graph_config.sbm_intra_cluster_prob_range,
-        inter_cluster_prob_range=graph_config.sbm_inter_cluster_prob_range,
-        device=device,
-        random_generator=random_generator)
-    else:
-      raise ValueError(f"Invalid graph type: {graph_type}")
-
-    if is_connected(edge_index=edge_index, num_nodes=metadata.num_nodes):
-      break
+  if graph_type == 'grid':
+    edge_index, metadata = grid_graph(graph_type=graph_type,
+                                      requested_num_nodes=num_nodes,
+                                      device=device)
+  elif graph_type == 'erdos_renyi':
+    assert graph_config.erdos_renyi_edge_prob_range is not None
+    edge_index, metadata = erdos_renyi_graph(graph_type=graph_type,
+                                             requested_num_nodes=num_nodes,
+                                             edge_prob_range=graph_config.erdos_renyi_edge_prob_range,
+                                             device=device,
+                                             random_generator=random_generator)
+  elif graph_type == 'barabasi_albert':
+    assert graph_config.barabasi_albert_min_num_edges_per_new_node_range is not None
+    edge_index, metadata = barabasi_albert_graph(
+      graph_type=graph_type,
+      requested_num_nodes=num_nodes,
+      num_edges_per_new_node_range=graph_config.barabasi_albert_min_num_edges_per_new_node_range,
+      device=device,
+      random_generator=random_generator)
+  elif graph_type == 'sbm':
+    assert graph_config.sbm_num_blocks_range is not None
+    assert graph_config.sbm_intra_cluster_prob_range is not None
+    assert graph_config.sbm_inter_cluster_prob_range is not None
+    edge_index, metadata = stochastic_block_model_graph(
+      graph_type=graph_type,
+      requested_num_nodes=num_nodes,
+      num_blocks_range=graph_config.sbm_num_blocks_range,
+      intra_cluster_prob_range=graph_config.sbm_intra_cluster_prob_range,
+      inter_cluster_prob_range=graph_config.sbm_inter_cluster_prob_range,
+      device=device,
+      random_generator=random_generator)
   else:
-    raise RuntimeError(f"Failed to generate connected {graph_type} graph with {num_nodes} nodes "
-                       f"after {MAX_CONNECTIVITY_ATTEMPTS} attempts")
+    raise ValueError(f"Invalid graph type: {graph_type}")
 
   assert is_undirected(edge_index), f"Graph is not undirected: {edge_index}"
+
+  if graph_config.return_largest_connected_component:
+    edge_index, metadata = _restrict_to_largest_connected_component(edge_index=edge_index, metadata=metadata)
+    assert is_connected(edge_index=edge_index, num_nodes=metadata.num_nodes), \
+      f"Largest connected component of {graph_type} graph is not connected: {edge_index}"
 
   # symmetric normalized laplacian
   laplacian_index, laplacian_weight = get_laplacian(
