@@ -186,6 +186,122 @@ def visualize_grid_gwt_coefficients(
   return fig
 
 
+def _draw_graph_panel(
+        ax: plt.Axes,
+        graph: nx.Graph,
+        layout: dict,
+        values,
+        cmap,
+        vmin: float | None = None,
+        vmax: float | None = None,
+):
+  nodes = nx.draw_networkx_nodes(graph, pos=layout, ax=ax, node_size=30,
+                                 node_color=values, cmap=cmap, vmin=vmin, vmax=vmax)
+  nx.draw_networkx_edges(graph, pos=layout, ax=ax, edge_color='lightgray', width=0.3)
+  ax.axis('off')
+  return nodes
+
+
+def _build_networkx_graph(num_nodes: int, edge_index: torch.Tensor) -> nx.Graph:
+  graph = nx.Graph()
+  graph.add_nodes_from(range(num_nodes))
+  graph.add_edges_from(edge_index.t().numpy())
+  return graph
+
+
+def visualize_graph_reconstruction(
+        reconstructed: torch.Tensor,
+        signal: torch.Tensor,
+        edge_index: torch.Tensor,
+        layout: dict,
+        gwt_mode: Literal['exact', 'chebyshev'],
+) -> plt.Figure:
+  num_channels = signal.shape[1]
+  graph = _build_networkx_graph(signal.shape[0], edge_index)
+  fig, axes = plt.subplots(num_channels, 3, figsize=(18, 5 * num_channels), squeeze=False)
+
+  for c in range(num_channels):
+    channel_signal = signal[:, c].numpy()
+    channel_reconstructed = reconstructed[:, c].numpy()
+    abs_error = abs(channel_signal - channel_reconstructed)
+    ax0, ax1, ax2 = axes[c]
+
+    nodes0 = _draw_graph_panel(ax0, graph, layout, channel_signal, 'RdBu_r')
+    ax0.set_title(f'Signal — C{c}', fontsize=TITLE_FONTSIZE)
+    fig.colorbar(nodes0, ax=ax0)
+
+    nodes1 = _draw_graph_panel(ax1, graph, layout, channel_reconstructed, 'RdBu_r')
+    ax1.set_title(f'Reconstruction — C{c}', fontsize=TITLE_FONTSIZE)
+    fig.colorbar(nodes1, ax=ax1)
+
+    nodes2 = _draw_graph_panel(ax2, graph, layout, abs_error, 'Reds')
+    ax2.set_title(f'Recon Error |x - x_recon| — C{c}', fontsize=TITLE_FONTSIZE)
+    fig.colorbar(nodes2, ax=ax2)
+
+  fig.suptitle(f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT', fontsize=SUPTITLE_FONTSIZE, fontweight='bold')
+  fig.tight_layout(rect=(0, 0, 1, 0.96))
+  return fig
+
+
+def visualize_graph_gwt_coefficients(
+        coeffs: torch.Tensor,
+        signal: torch.Tensor,
+        scales: list[float],
+        edge_index: torch.Tensor,
+        layout: dict,
+        gwt_mode: Literal['exact', 'chebyshev'],
+) -> plt.Figure:
+  num_channels, num_filters = coeffs.shape[1], coeffs.shape[2]
+  graph = _build_networkx_graph(signal.shape[0], edge_index)
+  fig, axes = plt.subplots(num_channels, num_filters + 1,
+                           figsize=(6 * (num_filters + 1), 5 * num_channels), squeeze=False)
+
+  for c in range(num_channels):
+    signal_ax = axes[c][0]
+    signal_nodes = _draw_graph_panel(signal_ax, graph, layout, signal[:, c].numpy(), 'RdBu_r')
+    signal_ax.set_title(f'Signal — C{c}', fontsize=TITLE_FONTSIZE)
+    fig.colorbar(signal_nodes, ax=signal_ax)
+
+    for f in range(num_filters):
+      ax = axes[c][f + 1]
+      nodes = _draw_graph_panel(ax, graph, layout, coeffs[:, c, f].numpy(), 'RdBu_r')
+      if f == 0:
+        ax.set_title(f'Scaling Function — C{c}', fontsize=TITLE_FONTSIZE)
+      else:
+        ax.set_title(f'Wavelet Scale {f} (s={scales[f - 1]:.2f}) — C{c}', fontsize=TITLE_FONTSIZE)
+      fig.colorbar(nodes, ax=ax)
+
+  fig.suptitle(f'SGWT Coefficients — {gwt_mode.title()} SGWT', fontsize=SUPTITLE_FONTSIZE, fontweight='bold')
+  fig.tight_layout(rect=(0, 0, 1, 0.96))
+  return fig
+
+
+def visualize_graph_sparsification_mask(
+        mask: torch.Tensor,
+        edge_index: torch.Tensor,
+        layout: dict,
+) -> plt.Figure:
+  num_channels, num_filters = mask.shape[1], mask.shape[2]
+  graph = _build_networkx_graph(mask.shape[0], edge_index)
+  cmap = ListedColormap(['white', 'black'])
+  fig, axes = plt.subplots(num_channels, num_filters, figsize=(6 * num_filters, 5 * num_channels), squeeze=False)
+
+  for c in range(num_channels):
+    for f in range(num_filters):
+      ax = axes[c][f]
+      filter_mask = mask[:, c, f].numpy()
+      _draw_graph_panel(ax, graph, layout, filter_mask, cmap, vmin=0, vmax=1)
+      keep_ratio = filter_mask.mean()
+      ax.set_title(f'Filter {f} — Channel {c} (kept {keep_ratio:.1%})', fontsize=TITLE_FONTSIZE)
+
+  fig.suptitle('Sparsification Mask', fontsize=SUPTITLE_FONTSIZE, fontweight='bold')
+  legend_handles = [Patch(facecolor='black', edgecolor='gray', label='Kept'),
+                   Patch(facecolor='white', edgecolor='gray', label='Discarded')]
+  fig.legend(handles=legend_handles, loc='upper center', ncol=2, bbox_to_anchor=(0.5, 0.96))
+  fig.tight_layout(rect=(0, 0, 1, 0.92))
+  return fig
+
+
 def visualize_grid_sparsification_mask(
         mask: torch.Tensor,
         rows: int,

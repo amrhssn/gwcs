@@ -109,7 +109,9 @@ def generate_abl_dataset(
       # generation
       graph = generate_graph(graph_type=graph_type,
                              num_nodes=num_nodes,
-                             device=device)
+                             graph_config=graph_config,
+                             device=device,
+                             random_generator=random_generator)
       abl_signal = approximately_bandlimited(coeffs=coeffs,
                                              num_frequency_modes=num_frequency_modes,
                                              signal_type=signal_type,

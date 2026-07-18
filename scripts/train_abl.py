@@ -10,7 +10,7 @@ from configs.abl import default_abl_configs
 from data.dataset import split_dataset
 from steps.data_generation import load_or_generate_abl_dataset
 from steps.training import run_epoch
-from steps.evaluation import run_test_epoch, save_test_figures
+from steps.evaluation import run_test_epoch
 from model.nigwt import NeuralInverseGraphWaveletTransform
 from model.loss import reconstruction_loss
 from eval.utils import relative_error
@@ -119,7 +119,8 @@ def main():
   test_results = run_test_epoch(loader=test_loader, model=model, device=device, loss_fn=reconstruction_loss,
                                 error_fn=relative_error, keep_ratio=configs.keep_ratio,
                                 random_generator=random_generator)
-  save_test_figures(results=test_results, test_dataset=test_dataset, run_dir=run_dir, gwt_config=configs.gwt_config)
+  tracker.save_test_figures(results=test_results, test_dataset=test_dataset, run_dir=run_dir,
+                            gwt_config=configs.gwt_config)
 
   test_loss_mean, test_loss_std = tracker.summarize([result.loss for result in test_results])
   test_error_mean, test_error_std = tracker.summarize([result.error for result in test_results])

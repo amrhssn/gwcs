@@ -29,15 +29,15 @@ class SignalGenerationConfig:
 
 @dataclass(frozen=True)
 class GraphWaveletTransformConfig:
-    gwt_mode: Literal["chebyshev", "exact"]
-    spectrum_lower_bound: float
-    spectrum_upper_bound: float
-    scaling_kernel_bandwidth_ratio: float
-    scaling_kernel_cutoff_eigenvalue: float
-    chebyshev_degree: int
-    num_scales: int
-    num_filters: int
-    scales: list[float]
+  gwt_mode: Literal["chebyshev", "exact"]
+  spectrum_lower_bound: float
+  spectrum_upper_bound: float
+  scaling_kernel_bandwidth_ratio: float
+  scaling_kernel_cutoff_eigenvalue: float
+  chebyshev_degree: int
+  num_scales: int
+  num_filters: int
+  scales: list[float]
 
 
 @dataclass(frozen=True)
@@ -62,12 +62,39 @@ class GridGraphMetadata(GraphMetadata):
 
 
 @dataclass(frozen=True)
+class ErdosRenyiGraphMetadata(GraphMetadata):
+  is_directed: bool
+  edge_prob_range: tuple[float, float]
+  edge_prob: float
+
+
+@dataclass(frozen=True)
+class BarabasiAlbertGraphMetadata(GraphMetadata):
+  num_edges_per_new_node: int
+  num_edges_per_new_node_range: tuple[int, int]
+
+
+@dataclass(frozen=True)
+class StochasticBlockModelGraphMetadata(GraphMetadata):
+  num_blocks: int
+  block_sizes: list[int]
+  edge_probs: list[list[float]]
+  intra_block_prob: float
+  inter_block_prob: float
+
+
+@dataclass(frozen=True)
 class Graph:
   edge_index: torch.Tensor
   symmetric_normalized_laplacian: torch.Tensor
   eigenvalues: torch.Tensor
   eigenvectors: torch.Tensor
-  metadata: Union[GridGraphMetadata]
+  metadata: Union[
+    GridGraphMetadata,
+    ErdosRenyiGraphMetadata,
+    BarabasiAlbertGraphMetadata,
+    StochasticBlockModelGraphMetadata
+  ]
 
 
 @dataclass(frozen=True)
