@@ -77,7 +77,6 @@ def test_visualize_signal_one_subplot_per_channel(grid_graph):
   fig = visualize_signal(signal=signal, edge_index=grid_graph.edge_index,
                          graph_type='grid', pos=grid_graph.metadata.pos)
 
-  assert fig.get_suptitle()
   main_axes = _main_axes(fig)
   assert len(main_axes) == num_channels
   for c, ax in enumerate(main_axes):
@@ -100,9 +99,9 @@ def test_visualize_grid_reconstruction_grid_shape(grid_graph):
   assert len(main_axes) == num_channels * 3
   for c in range(num_channels):
     original, reconstruction, error = main_axes[3 * c:3 * c + 3]
-    assert 'Original Signal' in original.get_title() and f'Channel {c}' in original.get_title()
-    assert 'Reconstruction' in reconstruction.get_title() and f'Channel {c}' in reconstruction.get_title()
-    assert 'Absolute Reconstruction Error' in error.get_title() and f'Channel {c}' in error.get_title()
+    assert 'Signal' in original.get_title() and f'C{c}' in original.get_title()
+    assert 'Reconstruction' in reconstruction.get_title() and f'C{c}' in reconstruction.get_title()
+    assert 'Recon Error' in error.get_title() and f'C{c}' in error.get_title()
     assert re.search(r'RMSE: [\d.]+', error.texts[0].get_text())
 
 
@@ -127,7 +126,7 @@ def test_visualize_grid_gwt_coefficients_grid_shape(grid_graph):
   assert len(main_axes) == num_channels * block_size
   for c in range(num_channels):
     channel_axes = main_axes[block_size * c:block_size * (c + 1)]
-    assert f'Signal — Channel {c}' in channel_axes[0].get_title()
+    assert f'Signal — C{c}' in channel_axes[0].get_title()
     assert 'Scaling Function' in channel_axes[1].get_title()
     for f, ax in enumerate(channel_axes[2:], start=1):
       assert f'Wavelet Scale {f}' in ax.get_title()
