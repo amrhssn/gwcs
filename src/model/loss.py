@@ -3,8 +3,8 @@ import torch.nn.functional as F
 
 
 def reconstruction_loss(
-        x_hat: torch.Tensor,
-        x: torch.Tensor,
+        reconstructed: torch.Tensor,
+        signal: torch.Tensor,
 ) -> torch.Tensor:
-  loss = F.mse_loss(input=x_hat, target=x, reduction='mean')
+  loss = F.mse_loss(input=reconstructed, target=signal, reduction='mean')
   return loss
