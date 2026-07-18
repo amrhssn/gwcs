@@ -120,7 +120,7 @@ def main():
                                 error_fn=relative_error, keep_ratio=configs.keep_ratio,
                                 random_generator=random_generator)
   tracker.save_test_figures(results=test_results, test_dataset=test_dataset, run_dir=run_dir,
-                            gwt_config=configs.gwt_config)
+                            gwt_config=configs.gwt_config, keep_ratio=configs.keep_ratio)
 
   test_loss_mean, test_loss_std = tracker.summarize([result.loss for result in test_results])
   test_error_mean, test_error_std = tracker.summarize([result.error for result in test_results])

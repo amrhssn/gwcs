@@ -114,6 +114,7 @@ def save_test_figures(
         test_dataset: ABLGraphSignalDataset,
         run_dir: Path,
         gwt_config: GraphWaveletTransformConfig,
+        keep_ratio: float,
 ) -> None:
   total = len(results)
   log_every = max(1, total // 5)
@@ -126,11 +127,12 @@ def save_test_figures(
     if metadata.graph_type == 'grid':
       rows, cols = metadata.height, metadata.width
       reconstruction_fig = visualize_grid_reconstruction(reconstructed=result.reconstructed, signal=result.signal,
-                                                         rows=rows, cols=cols, gwt_mode=gwt_config.gwt_mode)
+                                                         rows=rows, cols=cols, gwt_mode=gwt_config.gwt_mode,
+                                                         num_filters=gwt_config.num_filters, keep_ratio=keep_ratio)
       coefficients_fig = visualize_grid_gwt_coefficients(coeffs=result.coeffs, signal=result.signal,
                                                          scales=gwt_config.scales, rows=rows, cols=cols,
                                                          gwt_mode=gwt_config.gwt_mode)
-      mask_fig = visualize_grid_sparsification_mask(mask=result.mask, rows=rows, cols=cols)
+      mask_fig = visualize_grid_sparsification_mask(mask=result.mask, rows=rows, cols=cols, keep_ratio=keep_ratio)
     else:
       nx_graph = nx.Graph()
       nx_graph.add_nodes_from(range(metadata.num_nodes))
@@ -138,11 +140,13 @@ def save_test_figures(
       layout = nx.kamada_kawai_layout(nx_graph)
       reconstruction_fig = visualize_graph_reconstruction(reconstructed=result.reconstructed, signal=result.signal,
                                                           edge_index=graph.edge_index, layout=layout,
-                                                          gwt_mode=gwt_config.gwt_mode)
+                                                          gwt_mode=gwt_config.gwt_mode,
+                                                          num_filters=gwt_config.num_filters, keep_ratio=keep_ratio)
       coefficients_fig = visualize_graph_gwt_coefficients(coeffs=result.coeffs, signal=result.signal,
                                                           scales=gwt_config.scales, edge_index=graph.edge_index,
                                                           layout=layout, gwt_mode=gwt_config.gwt_mode)
-      mask_fig = visualize_graph_sparsification_mask(mask=result.mask, edge_index=graph.edge_index, layout=layout)
+      mask_fig = visualize_graph_sparsification_mask(mask=result.mask, edge_index=graph.edge_index, layout=layout,
+                                                     keep_ratio=keep_ratio)
 
     save_figure(run_dir=run_dir, category="reconstruction", filename=filename, fig=reconstruction_fig)
     save_figure(run_dir=run_dir, category="coefficients", filename=filename, fig=coefficients_fig)
