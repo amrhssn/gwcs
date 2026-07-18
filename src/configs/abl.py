@@ -74,7 +74,7 @@ def default_abl_configs() -> ABLExperimentConfig:
     activation_fn='relu',
     conv_layer_type='SAGEConv',
     processor_num_layers=5,
-    keep_ratio=1.0,
+    keep_ratio=0.01,
     lr=1e-3,
     weight_decay=5e-4,
     train_ratio=0.6,
