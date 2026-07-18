@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
+import torch
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,20 @@ def setup_logging(run_dir: Path) -> None:
   logging.basicConfig(level=logging.INFO,
                       format="%(message)s",
                       handlers=[logging.StreamHandler(), logging.FileHandler(run_dir / "train.log")])
+
+
+def log_run_info(run_dir: Path, dataset_dir: Path, config: Any) -> None:
+  logging.info(f"[*] Run dir: {run_dir}")
+  logging.info(f"[*] Dataset dir: {dataset_dir}")
+  logging.info(f"[*] Config:\n{json.dumps(asdict(config), indent=2)}")
+
+
+def log_model_info(model: torch.nn.Module, configs: Any, device: torch.device) -> None:
+  num_params = sum(p.numel() for p in model.parameters())
+  logging.info(f"[*] Model: {model.__class__.__name__} | hidden_dim={configs.hidden_dim} | "
+               f"conv_layer={configs.conv_layer_type} | processor_layers={configs.processor_num_layers} | "
+               f"params={num_params:,} | device={device}")
+  logging.info(f"[*] Architecture:\n{model}")
 
 
 def save_run_metadata(run_dir: Path, metadata: RunMetadata) -> None:
