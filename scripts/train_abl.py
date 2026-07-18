@@ -117,7 +117,7 @@ def main():
     for batch in test_loader:
       batch = batch.to(device)
       x_hat = forward_batch(model=model, batch=batch, keep_ratio=configs.keep_ratio, random_generator=random_generator)
-      test_losses.append(reconstruction_loss(x_hat=x_hat, x=batch.x).item())
+      test_losses.append(reconstruction_loss(reconstructed=x_hat, signal=batch.x).item())
       test_errors.append(relative_error(reconstructed=x_hat, signal=batch.x))
   test_loss = sum(test_losses) / len(test_losses)
   test_error = sum(test_errors) / len(test_errors)
