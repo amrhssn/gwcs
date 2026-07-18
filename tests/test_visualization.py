@@ -77,6 +77,7 @@ def test_visualize_signal_one_subplot_per_channel(grid_graph):
   fig = visualize_signal(signal=signal, edge_index=grid_graph.edge_index,
                          graph_type='grid', pos=grid_graph.metadata.pos)
 
+  assert fig.get_suptitle()
   main_axes = _main_axes(fig)
   assert len(main_axes) == num_channels
   for c, ax in enumerate(main_axes):
@@ -91,8 +92,10 @@ def test_visualize_grid_reconstruction_grid_shape(grid_graph):
   signal = _make_signal(grid_graph.eigenvectors, num_channels=num_channels)
   reconstructed = signal + 0.01 * torch.randn_like(signal)
 
-  fig = visualize_grid_reconstruction(reconstructed=reconstructed, signal=signal, rows=rows, cols=cols)
+  fig = visualize_grid_reconstruction(reconstructed=reconstructed, signal=signal, rows=rows, cols=cols,
+                                      gwt_mode='exact')
 
+  assert 'exact' in fig.get_suptitle().lower()
   main_axes = _main_axes(fig)
   assert len(main_axes) == num_channels * 3
   for c in range(num_channels):
@@ -109,7 +112,8 @@ def test_visualize_grid_reconstruction_saves_figure(monkeypatch, tmp_path, grid_
   signal = _make_signal(grid_graph.eigenvectors, num_channels=1)
   reconstructed = signal + 0.01 * torch.randn_like(signal)
 
-  visualize_grid_reconstruction(reconstructed=reconstructed, signal=signal, rows=rows, cols=cols, save_fig=True)
+  visualize_grid_reconstruction(reconstructed=reconstructed, signal=signal, rows=rows, cols=cols,
+                                gwt_mode='exact', save_fig=True)
 
   saved = list((tmp_path / 'gwt_figures').glob(f'*{rows}x{cols}*.png'))
   assert len(saved) == 1
@@ -127,14 +131,18 @@ def test_visualize_grid_gwt_coefficients_grid_shape(grid_graph):
                     eigenvectors=grid_graph.eigenvectors)
   assert coeffs.shape == (NUM_NODES, num_channels, len(kernels))
 
-  fig = visualize_grid_gwt_coefficients(coeffs=coeffs, scales=SCALES, rows=rows, cols=cols)
+  fig = visualize_grid_gwt_coefficients(coeffs=coeffs, signal=signal, scales=SCALES, rows=rows, cols=cols,
+                                        gwt_mode='exact')
 
+  assert 'exact' in fig.get_suptitle().lower()
   main_axes = _main_axes(fig)
-  assert len(main_axes) == num_channels * len(kernels)
+  block_size = len(kernels) + 1  # leading signal column + one column per filter
+  assert len(main_axes) == num_channels * block_size
   for c in range(num_channels):
-    channel_axes = main_axes[len(kernels) * c:len(kernels) * (c + 1)]
-    assert 'Scaling Function' in channel_axes[0].get_title()
-    for f, ax in enumerate(channel_axes[1:], start=1):
+    channel_axes = main_axes[block_size * c:block_size * (c + 1)]
+    assert f'Signal — Channel {c}' in channel_axes[0].get_title()
+    assert 'Scaling Function' in channel_axes[1].get_title()
+    for f, ax in enumerate(channel_axes[2:], start=1):
       assert f'Wavelet Scale {f}' in ax.get_title()
       assert f'{SCALES[f - 1]:.2f}' in ax.get_title()
 
@@ -150,9 +158,10 @@ def test_visualize_grid_gwt_coefficients_single_filter(grid_graph):
                     eigenvectors=grid_graph.eigenvectors)
   assert coeffs.shape == (NUM_NODES, 1, 1)
 
-  fig = visualize_grid_gwt_coefficients(coeffs=coeffs, scales=[], rows=rows, cols=cols)
+  fig = visualize_grid_gwt_coefficients(coeffs=coeffs, signal=signal, scales=[], rows=rows, cols=cols,
+                                        gwt_mode='exact')
 
-  assert len(_main_axes(fig)) == 1
+  assert len(_main_axes(fig)) == 2  # signal column + the single scaling-function column
 
 
 def test_visualize_grid_sparsification_mask_grid_shape(grid_graph):
@@ -171,6 +180,7 @@ def test_visualize_grid_sparsification_mask_grid_shape(grid_graph):
 
   fig = visualize_grid_sparsification_mask(mask=mask, rows=rows, cols=cols)
 
+  assert fig.get_suptitle()
   main_axes = _main_axes(fig)
   assert len(main_axes) == num_channels * len(kernels)
   for c in range(num_channels):
