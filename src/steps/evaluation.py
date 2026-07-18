@@ -41,7 +41,7 @@ def run_test_epoch(
   results = []
   total_batches = len(loader)
   log_every = max(1, total_batches // 5)
-  logging.info(f"[*] Running test: {total_batches} batches")
+  logging.info(f"Running test: {total_batches} batches")
   with torch.no_grad():
     for batch_idx, batch in enumerate(loader):
       batch = batch.to(device)
@@ -60,7 +60,7 @@ def run_test_epoch(
           error=error_fn(reconstructed=reconstructed, signal=signal),
         ))
       if (batch_idx + 1) % log_every == 0 or (batch_idx + 1) == total_batches:
-        logging.info(f"[*] Test progress: {batch_idx + 1}/{total_batches} batches")
+        logging.info(f"Test progress: {batch_idx + 1}/{total_batches} batches")
   return results
 
 
@@ -73,7 +73,7 @@ def save_test_figures(
   for result in results:
     graph_metadata = test_dataset.get_sample(result.sample_idx).graph.metadata
     if graph_metadata.graph_type != 'grid':
-      logging.warning(f"[*] Skipping figures for sample {result.sample_idx}: "
+      logging.warning(f"Skipping figures for sample {result.sample_idx}: "
                       f"visualization not implemented for graph_type={graph_metadata.graph_type!r}")
       continue
 
