@@ -1,4 +1,3 @@
-import os
 from typing import (
   Literal,
   Optional,
@@ -25,7 +24,7 @@ _FONT_SIZE_REFERENCE_HEIGHT = 4.0
 
 def _scaled_fontsizes(fig_height: float) -> tuple[float, float, float, float]:
   scale = fig_height / _FONT_SIZE_REFERENCE_HEIGHT
-  return (SUPTITLE_FONTSIZE * scale, TITLE_FONTSIZE * scale, LABEL_FONTSIZE * scale, CAPTION_FONTSIZE * scale)
+  return SUPTITLE_FONTSIZE * scale, TITLE_FONTSIZE * scale, LABEL_FONTSIZE * scale, CAPTION_FONTSIZE * scale
 
 
 def _add_caption(
@@ -95,7 +94,6 @@ def visualize_grid_reconstruction(
         rows: int,
         cols: int,
         gwt_mode: Literal['exact', 'chebyshev'],
-        save_fig: bool = False,
 ) -> plt.Figure:
   num_channels = signal.shape[1]
   fig, axes = plt.subplots(num_channels, 3, figsize=(18, 5 * num_channels), squeeze=False)
@@ -133,14 +131,6 @@ def visualize_grid_reconstruction(
   fig.suptitle(f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT', fontsize=SUPTITLE_FONTSIZE, fontweight='bold')
   fig.tight_layout(rect=(0, 0, 1, 0.96))
   fig.subplots_adjust(bottom=0.2 / num_channels)
-
-  if save_fig:
-    save_dir = 'gwt_figures'
-    os.makedirs(save_dir, exist_ok=True)
-    filename = f'inverse_sgwt_reconstruction_{rows}x{cols}.png'
-    filepath = os.path.join(save_dir, filename)
-    fig.savefig(filepath, dpi=300, bbox_inches='tight')
-    print(f"Figure saved to: {filepath}")
 
   return fig
 

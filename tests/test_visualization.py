@@ -106,19 +106,6 @@ def test_visualize_grid_reconstruction_grid_shape(grid_graph):
     assert re.search(r'RMSE: [\d.]+', error.texts[0].get_text())
 
 
-def test_visualize_grid_reconstruction_saves_figure(monkeypatch, tmp_path, grid_graph):
-  monkeypatch.chdir(tmp_path)
-  rows, cols = grid_graph.metadata.height, grid_graph.metadata.width
-  signal = _make_signal(grid_graph.eigenvectors, num_channels=1)
-  reconstructed = signal + 0.01 * torch.randn_like(signal)
-
-  visualize_grid_reconstruction(reconstructed=reconstructed, signal=signal, rows=rows, cols=cols,
-                                gwt_mode='exact', save_fig=True)
-
-  saved = list((tmp_path / 'gwt_figures').glob(f'*{rows}x{cols}*.png'))
-  assert len(saved) == 1
-
-
 def test_visualize_grid_gwt_coefficients_grid_shape(grid_graph):
   num_channels = 2
   rows, cols = grid_graph.metadata.height, grid_graph.metadata.width

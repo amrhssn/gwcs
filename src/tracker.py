@@ -1,9 +1,12 @@
 import json
 import logging
+import statistics
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+
+import matplotlib.pyplot as plt
 
 
 @dataclass(frozen=True)
@@ -25,8 +28,10 @@ class EpochRecord:
 class RunSummary:
   best_epoch: int
   best_val_loss: float
-  test_loss: float
-  test_error: float
+  test_loss_mean: float
+  test_loss_std: float
+  test_error_mean: float
+  test_error_std: float
 
 
 def create_run_dir(root: Path) -> Path:
@@ -51,3 +56,14 @@ def save_history(run_dir: Path, history: list[EpochRecord]) -> None:
 
 def save_summary(run_dir: Path, summary: RunSummary) -> None:
   (run_dir / "summary.json").write_text(json.dumps(asdict(summary), indent=2))
+
+
+def summarize(values: list[float]) -> tuple[float, float]:
+  return statistics.mean(values), statistics.pstdev(values)
+
+
+def save_figure(run_dir: Path, category: str, filename: str, fig: plt.Figure, dpi: int = 150) -> None:
+  fig_dir = run_dir / "figs" / category
+  fig_dir.mkdir(parents=True, exist_ok=True)
+  fig.savefig(fig_dir / filename, dpi=dpi, bbox_inches="tight")
+  plt.close(fig)

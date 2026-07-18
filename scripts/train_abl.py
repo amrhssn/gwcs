@@ -13,6 +13,11 @@ from steps.training import run_epoch, forward_batch
 from model.nigwt import NeuralInverseGraphWaveletTransform
 from model.loss import reconstruction_loss
 from eval.utils import relative_error
+from visualization import (
+  visualize_grid_reconstruction,
+  visualize_grid_gwt_coefficients,
+  visualize_grid_sparsification_mask,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -116,12 +121,43 @@ def main():
   with torch.no_grad():
     for batch in test_loader:
       batch = batch.to(device)
-      x_hat = forward_batch(model=model, batch=batch, keep_ratio=configs.keep_ratio, random_generator=random_generator)
-      test_losses.append(reconstruction_loss(reconstructed=x_hat, signal=batch.x).item())
-      test_errors.append(relative_error(reconstructed=x_hat, signal=batch.x))
-  test_loss = sum(test_losses) / len(test_losses)
-  test_error = sum(test_errors) / len(test_errors)
-  logging.info(f"[*] Test Loss: {test_loss:.4f} | Test Relative Error: {test_error:.4f}")
+      x_hat, mask = forward_batch(model=model, batch=batch, keep_ratio=configs.keep_ratio,
+                                  random_generator=random_generator)
+      for i in range(batch.num_graphs):
+        start, end = batch.ptr[i].item(), batch.ptr[i + 1].item()
+        signal = batch.x[start:end].cpu()
+        reconstructed = x_hat[start:end].cpu()
+        coeffs = batch.gwt_coeffs[start:end].cpu()
+        sample_mask = mask[start:end].cpu()
+        sample_idx = int(batch.sample_idx[i])
+
+        test_losses.append(reconstruction_loss(reconstructed=reconstructed, signal=signal).item())
+        test_errors.append(relative_error(reconstructed=reconstructed, signal=signal))
+
+        graph_metadata = test_dataset.get_sample(sample_idx).graph.metadata
+        if graph_metadata.graph_type != 'grid':
+          logging.warning(f"[*] Skipping figures for sample {sample_idx}: "
+                          f"visualization not implemented for graph_type={graph_metadata.graph_type!r}")
+          continue
+
+        rows, cols = graph_metadata.height, graph_metadata.width
+        filename = f"sample_{sample_idx:04d}.png"
+
+        recon_fig = visualize_grid_reconstruction(reconstructed=reconstructed, signal=signal,
+                                                  rows=rows, cols=cols, gwt_mode=configs.gwt_config.gwt_mode)
+        tracker.save_figure(run_dir=run_dir, category="reconstruction", filename=filename, fig=recon_fig)
+
+        coeffs_fig = visualize_grid_gwt_coefficients(coeffs=coeffs, signal=signal, scales=configs.gwt_config.scales,
+                                                     rows=rows, cols=cols, gwt_mode=configs.gwt_config.gwt_mode)
+        tracker.save_figure(run_dir=run_dir, category="coefficients", filename=filename, fig=coeffs_fig)
+
+        mask_fig = visualize_grid_sparsification_mask(mask=sample_mask, rows=rows, cols=cols)
+        tracker.save_figure(run_dir=run_dir, category="mask", filename=filename, fig=mask_fig)
+
+  test_loss_mean, test_loss_std = tracker.summarize(test_losses)
+  test_error_mean, test_error_std = tracker.summarize(test_errors)
+  logging.info(f"[*] Test Loss: {test_loss_mean:.4f} +/- {test_loss_std:.4f} | "
+              f"Test Relative Error: {test_error_mean:.4f} +/- {test_error_std:.4f}")
 
   # tracking run summary
   tracker.save_summary(
@@ -129,8 +165,10 @@ def main():
     summary=tracker.RunSummary(
       best_epoch=best_epoch,
       best_val_loss=best_val_loss,
-      test_loss=test_loss,
-      test_error=test_error,
+      test_loss_mean=test_loss_mean,
+      test_loss_std=test_loss_std,
+      test_error_mean=test_error_mean,
+      test_error_std=test_error_std,
     )
   )
 

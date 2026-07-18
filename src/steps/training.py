@@ -11,7 +11,7 @@ def forward_batch(
         batch,
         keep_ratio: float,
         random_generator: torch.Generator | None = None,
-) -> torch.Tensor:
+) -> tuple[torch.Tensor, torch.Tensor]:
   sparsification_mask = multilevel_importance_sampling(coeffs=batch.gwt_coeffs,
                                                         keep_ratio=keep_ratio,
                                                         batch=batch.batch,
@@ -24,7 +24,7 @@ def forward_batch(
     symmetric_normalized_laplacian=batch.symmetric_normalized_laplacian(),
     rescaled_symmetric_normalized_laplacian=batch.rescaled_symmetric_normalized_laplacian(),
   )
-  return x_hat
+  return x_hat, sparsification_mask
 
 
 def run_epoch(
@@ -41,7 +41,7 @@ def run_epoch(
   with torch.set_grad_enabled(optimizer is not None):
     for batch in loader:
       batch = batch.to(device)
-      x_hat = forward_batch(model=model, batch=batch, keep_ratio=keep_ratio, random_generator=random_generator)
+      x_hat, _ = forward_batch(model=model, batch=batch, keep_ratio=keep_ratio, random_generator=random_generator)
       loss = loss_fn(x_hat, batch.x)
       if optimizer is not None:
         optimizer.zero_grad()
