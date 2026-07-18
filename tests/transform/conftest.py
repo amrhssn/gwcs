@@ -6,6 +6,7 @@ from torch_geometric.utils import get_laplacian, to_dense_adj
 
 from data.generation.graph import generate_graph
 from data.generation.signal import approximately_bandlimited
+from data.types import GraphGenerationConfig
 from transform.kernels import default_kernels
 
 
@@ -24,7 +25,10 @@ MakeSignal = Callable[..., torch.Tensor]
 def _grid_graph_laplacian(
         requested_num_nodes: int
 ) -> GridGraph:
-  data = generate_graph(graph_type="grid", num_nodes=requested_num_nodes)
+  graph_config = GraphGenerationConfig(graph_types=['grid'],
+                                       num_nodes_range=(requested_num_nodes, requested_num_nodes),
+                                       num_graphs_per_type=1)
+  data = generate_graph(graph_type="grid", num_nodes=requested_num_nodes, graph_config=graph_config)
   num_nodes = data.metadata.num_nodes
   laplacian_index, laplacian_weight = get_laplacian(edge_index=data.edge_index,
                                                     normalization="sym",

@@ -5,6 +5,7 @@ import pytest
 from torch_geometric.utils import get_laplacian, to_dense_adj
 
 from data.generation.graph import generate_graph
+from data.types import GraphGenerationConfig
 from transform.kernels import default_kernels
 
 
@@ -15,10 +16,14 @@ NUM_NODES = 20
 GridGraph = tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int]
 KernelBank = tuple[list[Callable[[torch.Tensor], torch.Tensor]], int]
 
+GRAPH_CONFIG = GraphGenerationConfig(graph_types=['grid'],
+                                     num_nodes_range=(NUM_NODES, NUM_NODES),
+                                     num_graphs_per_type=1)
+
 
 @pytest.fixture
 def grid_graph() -> GridGraph:
-  data = generate_graph(graph_type="grid", num_nodes=NUM_NODES)
+  data = generate_graph(graph_type="grid", num_nodes=NUM_NODES, graph_config=GRAPH_CONFIG)
   num_nodes = data.metadata.num_nodes
   laplacian_index, laplacian_weight = get_laplacian(edge_index=data.edge_index,
                                                     normalization="sym",
