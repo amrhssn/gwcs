@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 
 from data.generation.graph import generate_graph
 from data.generation.signal import approximately_bandlimited
+from data.types import GraphGenerationConfig
 from transform.exact_sgwt import analysis
 from transform.kernels import default_kernels
 from sampler.mlis import multilevel_importance_sampling
@@ -23,6 +24,10 @@ from visualization import (
 NUM_NODES = 12
 SCALES = [0.5, 1.5]
 
+GRAPH_CONFIG = GraphGenerationConfig(graph_types=['grid'],
+                                     num_nodes_range=(NUM_NODES, NUM_NODES),
+                                     num_graphs_per_type=1)
+
 
 @pytest.fixture(autouse=True)
 def _close_figures():
@@ -32,7 +37,7 @@ def _close_figures():
 
 @pytest.fixture
 def grid_graph():
-  return generate_graph(graph_type='grid', num_nodes=NUM_NODES)
+  return generate_graph(graph_type='grid', num_nodes=NUM_NODES, graph_config=GRAPH_CONFIG)
 
 
 def _make_signal(eigenvectors: torch.Tensor, num_channels: int, seed: int = 0) -> torch.Tensor:
@@ -77,12 +82,11 @@ def test_visualize_signal_one_subplot_per_channel(grid_graph):
   fig = visualize_signal(signal=signal, edge_index=grid_graph.edge_index,
                          graph_type='grid', pos=grid_graph.metadata.pos)
 
+  assert f'{NUM_NODES} nodes' in fig.get_suptitle()
   main_axes = _main_axes(fig)
   assert len(main_axes) == num_channels
   for c, ax in enumerate(main_axes):
     assert f'Channel {c}' in ax.get_title()
-    caption = ax.texts[0].get_text()
-    assert f'N={NUM_NODES} nodes' in caption
 
 
 def test_visualize_grid_reconstruction_grid_shape(grid_graph):
@@ -97,12 +101,13 @@ def test_visualize_grid_reconstruction_grid_shape(grid_graph):
   assert 'exact' in fig.get_suptitle().lower()
   main_axes = _main_axes(fig)
   assert len(main_axes) == num_channels * 3
+  caption = ' '.join(t.get_text() for t in fig.texts)
   for c in range(num_channels):
     original, reconstruction, error = main_axes[3 * c:3 * c + 3]
-    assert 'Signal' in original.get_title() and f'C{c}' in original.get_title()
-    assert 'Reconstruction' in reconstruction.get_title() and f'C{c}' in reconstruction.get_title()
-    assert 'Recon Error' in error.get_title() and f'C{c}' in error.get_title()
-    assert re.search(r'RMSE: [\d.]+', error.texts[0].get_text())
+    assert 'Signal' in original.get_title() and f'Channel {c}' in original.get_title()
+    assert reconstruction.get_title() == 'Reconstruction'
+    assert error.get_title() == 'Recon Error |x - x_recon|'
+    assert re.search(rf'Channel {c}: max [\d.]+ \| MSE [\d.]+ \| RMSE [\d.]+', caption)
 
 
 def test_visualize_grid_gwt_coefficients_grid_shape(grid_graph):
@@ -126,7 +131,7 @@ def test_visualize_grid_gwt_coefficients_grid_shape(grid_graph):
   assert len(main_axes) == num_channels * block_size
   for c in range(num_channels):
     channel_axes = main_axes[block_size * c:block_size * (c + 1)]
-    assert f'Signal — C{c}' in channel_axes[0].get_title()
+    assert f'Signal — Channel {c}' in channel_axes[0].get_title()
     assert 'Scaling Function' in channel_axes[1].get_title()
     for f, ax in enumerate(channel_axes[2:], start=1):
       assert f'Wavelet Scale {f}' in ax.get_title()
@@ -172,10 +177,8 @@ def test_visualize_grid_sparsification_mask_grid_shape(grid_graph):
   for c in range(num_channels):
     for f in range(len(kernels)):
       ax = main_axes[len(kernels) * c + f]
-      assert f'Filter {f}' in ax.get_title() and f'Channel {c}' in ax.get_title()
       expected_ratio = mask[:, c, f].float().mean().item()
-      caption = ax.texts[0].get_text()
-      match = re.search(r'Kept ([\d.]+)% of nodes', caption)
+      match = re.search(rf'Filter {f} \(kept ([\d.]+)%\)', ax.get_title())
       assert match is not None
-      # caption rounds to one decimal place (0.1% = 0.001 fraction), so allow half that as tolerance
+      # title rounds to one decimal place (0.1% = 0.001 fraction), so allow half that as tolerance
       assert abs(float(match.group(1)) / 100 - expected_ratio) < 5e-4
