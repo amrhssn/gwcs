@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -87,6 +88,9 @@ def generate_abl_dataset(
   samples: list[ABLGraphSignalSample] = []
   spectral_kernels = default_kernels(minimum_eigenvalue=gwt_config.scaling_kernel_cutoff_eigenvalue,
                                      scales=gwt_config.scales)
+  total_samples = len(graph_config.graph_types) * graph_config.num_graphs_per_type
+  log_every = max(1, total_samples // 10)
+  logging.info(f"[*] Generating dataset: {total_samples} samples, graph_types={graph_config.graph_types}")
   for graph_type in graph_config.graph_types:
     for graph_idx in range(graph_config.num_graphs_per_type):
       # graph parameters
@@ -129,6 +133,8 @@ def generate_abl_dataset(
                                     signal=abl_signal,
                                     gwt_coeffs=gwt_coeffs)
       samples.append(sample)
+      if len(samples) % log_every == 0 or len(samples) == total_samples:
+        logging.info(f"[*] Generated {len(samples)}/{total_samples} samples")
   generation_config = GenerationConfig(graph_config=graph_config,
                                        signal_config=signal_config,
                                        gwt_config=gwt_config)
@@ -177,13 +183,14 @@ def load_or_generate_abl_dataset(
   matches = sorted(dataset_dir.glob(f"*_{cache_key}"))
   if matches:
     cache_dir = matches[-1]
-    print(f"[*] Loading cached dataset: {cache_dir.name}")
+    logging.info(f"[*] Using cached dataset: {cache_dir.name}")
     samples = torch.load(cache_dir / "samples.pt", weights_only=False)
     cached_configs = _load_configs(cache_dir / "config.json")
     dataset = ABLGraphSignalDataset(samples=samples, configs=cached_configs)
     dataset.storage_path = cache_dir
     return dataset
 
+  logging.info(f"[*] No cached dataset found (key={cache_key}); generating new dataset")
   dataset = generate_abl_dataset(graph_config=graph_config, signal_config=signal_config,
                                  gwt_config=gwt_config, device=device, random_generator=random_generator)
   timestamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
@@ -192,6 +199,6 @@ def load_or_generate_abl_dataset(
   cache_dir.mkdir(parents=True)
   torch.save(dataset.samples, cache_dir / "samples.pt")
   (cache_dir / "config.json").write_text(json.dumps(asdict(configs), indent=2, sort_keys=True))
-  print(f"[*] Saved dataset: {cache_dir.name}")
+  logging.info(f"[*] Saved dataset: {cache_dir.name}")
   dataset.storage_path = cache_dir
   return dataset
