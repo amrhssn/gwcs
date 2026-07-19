@@ -108,7 +108,7 @@ def test_sgae_achieved_ratio_matches_derived_sparsity_ratio_across_shapes(
                                             num_layers=1, is_variational=False)
   z = torch.randn(num_nodes, latent_dim)
   batch = torch.zeros(num_nodes, dtype=torch.long)
-  z_sparse = model._ste_sparsify(z=z, batch=batch, sparsity_ratio=compression.sparsity_ratio, temperature=0.5)
+  z_sparse, _ = model._ste_sparsify(z=z, batch=batch, sparsity_ratio=compression.sparsity_ratio, temperature=0.5)
 
   kept = int((z_sparse != 0).sum().item())
   expected_kept = max(1, round(compression.sparsity_ratio * num_nodes * latent_dim))
