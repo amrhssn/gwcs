@@ -8,15 +8,15 @@ from typing import Literal
 
 import torch
 
-from data.generation.graph import generate_graph
-from data.generation.signal import approximately_bandlimited
-from data.types import (
+from configs.abl import (
   GraphGenerationConfig,
   SignalGenerationConfig,
   GraphWaveletTransformConfig,
   GenerationConfig,
-  ABLGraphSignalSample,
 )
+from data.generation.graph import generate_graph
+from data.generation.signal import approximately_bandlimited
+from data.types import ABLGraphSignalSample
 from data.dataset import ABLGraphSignalDataset
 from transform.kernels import default_kernels
 from transform.exact_sgwt import analysis as exact_analysis

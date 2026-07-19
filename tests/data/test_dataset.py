@@ -1,8 +1,8 @@
 import torch
 from torch_geometric.loader import DataLoader
 
+from configs.abl import GraphWaveletTransformConfig
 from data.dataset import ABLGraphSignalDataset, sample_to_data, split_dataset
-from data.types import GraphWaveletTransformConfig
 from transform.chebyshev_sgwt import _rescale_laplacian_spectrum_to_chebyshev_domain
 from model.nigwt import NeuralInverseGraphWaveletTransform
 

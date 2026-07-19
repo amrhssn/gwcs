@@ -4,12 +4,12 @@ from typing import Literal
 import pytest
 import torch
 
-from data.dataset import ABLGraphSignalDataset
-from data.types import (
+from configs.abl import (
   GraphGenerationConfig,
   SignalGenerationConfig,
   GraphWaveletTransformConfig,
 )
+from data.dataset import ABLGraphSignalDataset
 from steps.data_generation import generate_abl_dataset
 
 

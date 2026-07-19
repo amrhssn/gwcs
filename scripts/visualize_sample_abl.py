@@ -4,7 +4,7 @@ import torch
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from data.types import GraphGenerationConfig
+from configs.abl import GraphGenerationConfig
 from data.generation.graph import generate_graph
 from data.generation.signal import approximately_bandlimited
 from transform.kernels import default_kernels

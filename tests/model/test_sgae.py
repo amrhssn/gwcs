@@ -30,11 +30,11 @@ def test_forward_shape(conv_layer_type: str, is_variational: bool) -> None:
     activation_fn="relu",
     conv_layer_type=conv_layer_type,
     num_layers=2,
-    sparsity_ratio=0.5,
     is_variational=is_variational,
   )
 
-  x_hat, mu, logstd = model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
+  x_hat, mu, logstd = model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                            sparsity_ratio=0.5, temperature=0.5)
 
   assert x_hat.shape == batch.x.shape
   if is_variational:
@@ -55,27 +55,33 @@ def test_single_layer_stack_forward_shape() -> None:
     activation_fn="relu",
     conv_layer_type="GCNConv",
     num_layers=1,
-    sparsity_ratio=0.5,
     is_variational=False,
   )
 
-  x_hat, mu, logstd = model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
+  x_hat, mu, logstd = model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                            sparsity_ratio=0.5, temperature=0.5)
   assert x_hat.shape == batch.x.shape
   assert mu is None and logstd is None
 
 
 @pytest.mark.parametrize("sparsity_ratio", [0.0, 1.0, -0.1, 1.5])
 def test_invalid_sparsity_ratio_raises(sparsity_ratio: float) -> None:
+  generator = torch.Generator().manual_seed(0)
+  num_channels = 2
+  batch = _make_batch(num_channels, generator)
+
+  model = SparseVariationalGraphAutoEncoder(
+    num_channels=num_channels,
+    latent_dim=4,
+    activation_fn="relu",
+    conv_layer_type="SAGEConv",
+    num_layers=2,
+    is_variational=False,
+  )
+
   with pytest.raises(AssertionError):
-    SparseVariationalGraphAutoEncoder(
-      num_channels=2,
-      latent_dim=4,
-      activation_fn="relu",
-      conv_layer_type="SAGEConv",
-      num_layers=2,
-      sparsity_ratio=sparsity_ratio,
-      is_variational=False,
-    )
+    model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+         sparsity_ratio=sparsity_ratio, temperature=0.5)
 
 
 # --- sparsification: per-graph budget + batch isolation --------------------
@@ -92,17 +98,17 @@ def test_sparsity_respects_per_graph_budget() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=sparsity_ratio,
     is_variational=False,
   )
   model.eval()
 
-  z, _, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.1)
+  z, _, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                         sparsity_ratio=sparsity_ratio, temperature=0.1)
 
   for graph_id in batch.batch.unique().tolist():
     node_mask = batch.batch == graph_id
-    num_nodes = int(node_mask.sum())
-    expected_k = max(1, round(sparsity_ratio * num_nodes))
+    num_entries = int(node_mask.sum()) * z.shape[-1]
+    expected_k = max(1, round(sparsity_ratio * num_entries))
     actual_k = (z[node_mask] != 0).sum().item()
     assert actual_k == expected_k
 
@@ -119,22 +125,22 @@ def test_sparsification_batches_are_independent() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=sparsity_ratio,
     is_variational=False,
   )
 
   z = torch.randn(batch.num_nodes, 4, generator=generator)
-  baseline = model._ste_sparsify(z, batch.batch, temperature=0.1)
+  baseline = model._ste_sparsify(z, batch.batch, sparsity_ratio=sparsity_ratio, temperature=0.1)
 
   for graph_id in batch.batch.unique().tolist():
     node_mask = batch.batch == graph_id
-    expected_k = max(1, round(sparsity_ratio * int(node_mask.sum())))
+    num_entries = int(node_mask.sum()) * z.shape[-1]
+    expected_k = max(1, round(sparsity_ratio * num_entries))
     assert (baseline[node_mask] != 0).sum().item() == expected_k
 
   # Blowing up graph 0's values must not change which entries graphs 1/2 select.
   z_perturbed = z.clone()
   z_perturbed[batch.batch == 0] *= 100
-  perturbed = model._ste_sparsify(z_perturbed, batch.batch, temperature=0.1)
+  perturbed = model._ste_sparsify(z_perturbed, batch.batch, sparsity_ratio=sparsity_ratio, temperature=0.1)
 
   other_graphs = batch.batch != 0
   assert torch.equal(baseline[other_graphs] != 0, perturbed[other_graphs] != 0)
@@ -154,14 +160,13 @@ def test_ste_forward_matches_hard_topk_and_is_temperature_invariant() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=sparsity_ratio,
     is_variational=False,
   )
 
   z = torch.randn(batch.num_nodes, 5, generator=generator)
 
-  low_temp = model._ste_sparsify(z, batch.batch, temperature=0.05)
-  high_temp = model._ste_sparsify(z, batch.batch, temperature=5.0)
+  low_temp = model._ste_sparsify(z, batch.batch, sparsity_ratio=sparsity_ratio, temperature=0.05)
+  high_temp = model._ste_sparsify(z, batch.batch, sparsity_ratio=sparsity_ratio, temperature=5.0)
 
   # The forward value is exactly the hard top-k mask, regardless of temperature.
   assert torch.equal(low_temp, high_temp)
@@ -170,7 +175,7 @@ def test_ste_forward_matches_hard_topk_and_is_temperature_invariant() -> None:
     node_mask = batch.batch == graph_id
     block = z[node_mask]
     out_block = low_temp[node_mask]
-    k = max(1, round(sparsity_ratio * int(node_mask.sum())))
+    k = max(1, round(sparsity_ratio * block.numel()))
 
     expected_selected = torch.zeros(block.numel(), dtype=torch.bool)
     expected_selected[torch.topk(block.abs().reshape(-1), k).indices] = True
@@ -191,13 +196,12 @@ def test_ste_gradient_reaches_unselected_entries() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=0.3,
     is_variational=False,
   )
 
   h = model._run_gnn(batch.x, batch.edge_index, model.encoder_layers, model.encoder_norms)
   h = h.detach().requires_grad_(True)
-  z_sparse = model._ste_sparsify(h, batch.batch, temperature=0.5)
+  z_sparse = model._ste_sparsify(h, batch.batch, sparsity_ratio=0.3, temperature=0.5)
   z_sparse.sum().backward()
 
   unselected_grad = h.grad[z_sparse == 0]
@@ -220,7 +224,6 @@ def test_ste_gradient_sharpens_as_temperature_anneals() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=sparsity_ratio,
     is_variational=False,
   )
 
@@ -231,7 +234,7 @@ def test_ste_gradient_sharpens_as_temperature_anneals() -> None:
   def grad_at_far_entry(temperature: float) -> float:
     if z.grad is not None:
       z.grad = None
-    out = model._ste_sparsify(z, batch.batch, temperature=temperature)
+    out = model._ste_sparsify(z, batch.batch, sparsity_ratio=sparsity_ratio, temperature=temperature)
     out.sum().backward()
     return z.grad[0, 0].abs().item()
 
@@ -256,7 +259,6 @@ def test_temperature_schedule_keeps_sparsity_exact_fixed_and_annealed() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=sparsity_ratio,
     is_variational=False,
   )
 
@@ -265,10 +267,11 @@ def test_temperature_schedule_keeps_sparsity_exact_fixed_and_annealed() -> None:
   annealing_schedule = [1.0, 0.5, 0.1, 0.01]
 
   for temperature in fixed_schedule + annealing_schedule:
-    out = model._ste_sparsify(z, batch.batch, temperature=temperature)
+    out = model._ste_sparsify(z, batch.batch, sparsity_ratio=sparsity_ratio, temperature=temperature)
     for graph_id in batch.batch.unique().tolist():
       node_mask = batch.batch == graph_id
-      expected_k = max(1, round(sparsity_ratio * int(node_mask.sum())))
+      num_entries = int(node_mask.sum()) * z.shape[-1]
+      expected_k = max(1, round(sparsity_ratio * num_entries))
       assert (out[node_mask] != 0).sum().item() == expected_k
 
 
@@ -285,11 +288,11 @@ def test_variational_kl_and_elbo() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=0.5,
     is_variational=True,
   )
 
-  x_hat, mu, logstd = model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
+  x_hat, mu, logstd = model(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                            sparsity_ratio=0.5, temperature=0.5)
   kl = kl_loss(mu, logstd, batch.batch)
   loss, recon, kl2 = elbo_loss(x_hat, batch.x, mu, logstd, batch.batch)
 
@@ -309,17 +312,20 @@ def test_variational_eval_uses_mean_train_samples() -> None:
     activation_fn="relu",
     conv_layer_type="SAGEConv",
     num_layers=2,
-    sparsity_ratio=0.5,
     is_variational=True,
   )
 
   model.eval()
-  z_eval_1, mu1, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
-  z_eval_2, mu2, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
+  z_eval_1, mu1, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                                  sparsity_ratio=0.5, temperature=0.5)
+  z_eval_2, mu2, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                                  sparsity_ratio=0.5, temperature=0.5)
   assert torch.equal(z_eval_1, z_eval_2)
   assert torch.equal(mu1, mu2)
 
   model.train()
-  z_train_1, _, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
-  z_train_2, _, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch, temperature=0.5)
+  z_train_1, _, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                                 sparsity_ratio=0.5, temperature=0.5)
+  z_train_2, _, _ = model.encode(x=batch.x, edge_index=batch.edge_index, batch=batch.batch,
+                                 sparsity_ratio=0.5, temperature=0.5)
   assert not torch.equal(z_train_1, z_train_2)

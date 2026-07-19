@@ -4,8 +4,8 @@ import torch
 import pytest
 from torch_geometric.utils import get_laplacian, to_dense_adj
 
+from configs.abl import GraphGenerationConfig
 from data.generation.graph import generate_graph
-from data.types import GraphGenerationConfig
 from transform.kernels import default_kernels
 
 

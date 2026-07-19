@@ -140,7 +140,7 @@ def visualize_grid_reconstruction(
         signal: torch.Tensor,
         rows: int,
         cols: int,
-        gwt_mode: Literal['exact', 'chebyshev'],
+        gwt_mode: Optional[Literal['exact', 'chebyshev']] = None,
         num_filters: Optional[int] = None,
         keep_ratio: Optional[float] = None,
 ) -> plt.Figure:
@@ -179,8 +179,8 @@ def visualize_grid_reconstruction(
     error_lines.append(f'Channel {c}: max {abs_error.max().item():.4f} | MSE {mse:.4f} | RMSE {mse ** 0.5:.4f}')
 
   caption = sparsity_caption + '\n' + ' | '.join(error_lines)
-  plot_top = _add_header(fig, fig_height=fig_height, title=f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT',
-                         caption=caption)
+  title = f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT' if gwt_mode is not None else 'Signal vs. Reconstruction'
+  plot_top = _add_header(fig, fig_height=fig_height, title=title, caption=caption)
   fig.tight_layout(rect=(0, 0, 1, plot_top))
   return fig
 
@@ -269,7 +269,7 @@ def visualize_graph_reconstruction(
         signal: torch.Tensor,
         edge_index: torch.Tensor,
         layout: dict,
-        gwt_mode: Literal['exact', 'chebyshev'],
+        gwt_mode: Optional[Literal['exact', 'chebyshev']] = None,
         num_filters: Optional[int] = None,
         keep_ratio: Optional[float] = None,
 ) -> plt.Figure:
@@ -302,8 +302,8 @@ def visualize_graph_reconstruction(
     error_lines.append(f'Channel {c}: max {abs_error.max().item():.4f} | MSE {mse:.4f} | RMSE {mse ** 0.5:.4f}')
 
   caption = sparsity_caption + '\n' + ' | '.join(error_lines)
-  plot_top = _add_header(fig, fig_height=fig_height, title=f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT',
-                         caption=caption)
+  title = f'Signal vs. Reconstruction — {gwt_mode.title()} SGWT' if gwt_mode is not None else 'Signal vs. Reconstruction'
+  plot_top = _add_header(fig, fig_height=fig_height, title=title, caption=caption)
   fig.tight_layout(rect=(0, 0, 1, plot_top))
   return fig
 

@@ -15,12 +15,9 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
           activation_fn: str,
           conv_layer_type: str,
           num_layers: int,
-          sparsity_ratio: float,
           is_variational: bool,
   ):
     super().__init__()
-    assert 0 < sparsity_ratio < 1, "sparsity_ratio must be in (0, 1)"
-    self.sparsity_ratio = sparsity_ratio
     self.is_variational = is_variational
     self.activation_fn = get_activation_fn(name=activation_fn)
 
@@ -79,17 +76,19 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
           self,
           z: Tensor,
           batch: Tensor,
+          sparsity_ratio: float,
           temperature: float
   ) -> Tensor:
-    # Per graph: keep round(sparsity_ratio * n_i) entries (by |z|) out of that
-    # graph's whole (n_i, D) block.
+    # Per graph: keep round(sparsity_ratio * n_i * D) entries (by |z|) out of
+    # that graph's whole (n_i, D) block.
     # Forward = hard top-k; backward = gradient of a sigmoid soft mask around the graph's own threshold (STE).
+    assert 0 < sparsity_ratio < 1, "sparsity_ratio must be in (0, 1)"
     num_graphs = int(batch.max()) + 1
     mask = torch.zeros_like(z)
     for g in range(num_graphs):
       idx = batch == g
       flat = z[idx].reshape(-1)
-      k = max(1, round(self.sparsity_ratio * idx.sum().item()))
+      k = max(1, round(sparsity_ratio * flat.numel()))
       magnitude = flat.abs()
       topk_val, topk_idx = torch.topk(magnitude, k)
       hard_mask = torch.zeros_like(flat)
@@ -103,6 +102,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
           x: Tensor,
           edge_index: Tensor,
           batch: Tensor,
+          sparsity_ratio: float,
           temperature: float,
   ) -> tuple[Tensor, Tensor | None, Tensor | None]:
     h = self._run_gnn(x, edge_index, self.encoder_layers, self.encoder_norms)
@@ -112,7 +112,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
       z = mu + torch.randn_like(logstd) * logstd.exp() if self.training else mu
     else:
       mu, logstd, z = None, None, h
-    z_sparse = self._ste_sparsify(z, batch, temperature)
+    z_sparse = self._ste_sparsify(z, batch, sparsity_ratio, temperature)
     return z_sparse, mu, logstd
 
   def decode(
@@ -125,12 +125,11 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
   def forward(
           self,
           x: Tensor,
-          edge_index:
-          Tensor,
-          batch:
-          Tensor,
+          edge_index: Tensor,
+          batch: Tensor,
+          sparsity_ratio: float,
           temperature: float,
   ) -> tuple[Tensor, Tensor | None, Tensor | None]:
-    z_sparse, mu, logstd = self.encode(x, edge_index, batch, temperature)
+    z_sparse, mu, logstd = self.encode(x, edge_index, batch, sparsity_ratio, temperature)
     x_hat = self.decode(z_sparse, edge_index)
     return x_hat, mu, logstd

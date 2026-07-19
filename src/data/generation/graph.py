@@ -13,8 +13,8 @@ from torch_geometric.utils import (
   stochastic_blockmodel_graph as pyg_stochastic_blockmodel_graph,
 )
 
+from configs.abl import GraphGenerationConfig
 from data.types import (
-  GraphGenerationConfig,
   GraphMetadata,
   GridGraphMetadata,
   ErdosRenyiGraphMetadata,
