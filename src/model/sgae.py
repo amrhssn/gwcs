@@ -56,7 +56,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
                         conv_layer_type=conv_layer_type)
       )
       if not is_last:
-        norms.append(nn.LayerNorm(dim))
+        norms.append(nn.LayerNorm(dim) if dim > 1 else nn.Identity())
       dim = out
     return layers, norms
 
