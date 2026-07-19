@@ -56,8 +56,10 @@ def _generate_abl_signal_coeffs(
   coeffs_std = float(torch.empty(1).uniform_(signal_config.coeffs_std_range[0],
                                              signal_config.coeffs_std_range[1],
                                              generator=random_generator).item())
-  num_frequency_modes = int(torch.randint(low=3,
-                                          high=int(num_nodes * signal_config.max_num_frequency_mode_ratio) + 1,
+  low = min(3, num_nodes)
+  max_modes = min(num_nodes, max(low, int(num_nodes * signal_config.max_num_frequency_mode_ratio)))
+  num_frequency_modes = int(torch.randint(low=low,
+                                          high=max_modes + 1,
                                           size=(1,),
                                           generator=random_generator).item())
   coeffs = torch.normal(mean=coeffs_mean,
@@ -99,10 +101,6 @@ def generate_abl_dataset(
       # signal parameters
       signal_type = _generate_abl_signal_type(signal_config=signal_config,
                                               random_generator=random_generator)
-      coeffs, num_frequency_modes = _generate_abl_signal_coeffs(signal_config=signal_config,
-                                                                num_nodes=num_nodes,
-                                                                device=device,
-                                                                random_generator=random_generator)
       noise_level = _generate_abl_signal_noise_level(signal_config=signal_config,
                                                      random_generator=random_generator)
 
@@ -112,6 +110,10 @@ def generate_abl_dataset(
                              graph_config=graph_config,
                              device=device,
                              random_generator=random_generator)
+      coeffs, num_frequency_modes = _generate_abl_signal_coeffs(signal_config=signal_config,
+                                                                num_nodes=graph.eigenvectors.shape[0],
+                                                                device=device,
+                                                                random_generator=random_generator)
       abl_signal = approximately_bandlimited(coeffs=coeffs,
                                              num_frequency_modes=num_frequency_modes,
                                              signal_type=signal_type,
