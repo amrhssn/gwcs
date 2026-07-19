@@ -50,7 +50,7 @@ def default_abl_configs() -> ABLExperimentConfig:
     graph_config=GraphGenerationConfig(
       graph_types=['erdos_renyi'],
       num_nodes_range=(200, 400),
-      num_graphs_per_type=100,
+      num_graphs_per_type=200,
       erdos_renyi_edge_prob_range=(0.005, 0.01),
       barabasi_albert_min_num_edges_per_new_node_range=(1, 2),
       sbm_num_blocks_range=(2, 5),
