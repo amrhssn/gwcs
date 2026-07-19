@@ -15,7 +15,7 @@ def approximately_bandlimited(
 ) -> ABLSignal:
   num_nodes = eigenvector.shape[0]
   if num_frequency_modes > num_nodes:
-    raise ValueError(f"num_modes ({num_frequency_modes}) cannot be greater than number of nodes ({num_nodes})")
+    raise ValueError(f"num_frequency_modes ({num_frequency_modes}) cannot be greater than number of nodes ({num_nodes})")
 
   if signal_type == 'lowpass':
     selected_indices = torch.arange(num_frequency_modes, device=eigenvector.device)
