@@ -65,20 +65,21 @@ def run_sgae_test_epoch(
   with torch.no_grad():
     for batch_idx, batch in enumerate(loader):
       batch = batch.to(device)
-      x_hat, _, _ = forward_batch_sgae(model=model, batch=batch, sparsity_ratio=sparsity_ratio, temperature=temperature)
+      x_hat, mask, _, _ = forward_batch_sgae(model=model, batch=batch, sparsity_ratio=sparsity_ratio,
+                                             temperature=temperature)
       for i in range(batch.num_graphs):
         start, end = batch.ptr[i].item(), batch.ptr[i + 1].item()
         signal = batch.x[start:end].cpu()
         reconstructed = x_hat[start:end].cpu()
-        num_nodes_i = end - start
-        kept = max(1, round(sparsity_ratio * num_nodes_i * latent_dim))
+        sample_mask = mask[start:end].cpu()
         results.append(SGAETestSample(
           sample_idx=int(batch.sample_idx[i]),
           signal=signal,
           reconstructed=reconstructed,
+          mask=sample_mask,
           loss=loss_fn(reconstructed=reconstructed, signal=signal).item(),
           error=error_fn(reconstructed=reconstructed, signal=signal),
-          compression_ratio=kept / (num_nodes_i * num_channels),
+          compression_ratio=sample_mask.float().mean().item() * latent_dim / num_channels,
         ))
       if (batch_idx + 1) % log_every == 0 or (batch_idx + 1) == total_batches:
         logging.info(f"Test progress: {batch_idx + 1}/{total_batches} batches")

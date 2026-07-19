@@ -67,6 +67,7 @@ def _sparsity_caption(
         num_nodes: int,
         num_filters: Optional[int] = None,
         keep_ratio: Optional[float] = None,
+        compression_ratio: Optional[float] = None,
 ) -> str:
   parts = [f'N={num_nodes} nodes']
   if num_filters is not None:
@@ -75,8 +76,11 @@ def _sparsity_caption(
     parts.append(f'keep_ratio={keep_ratio:.3f}')
   if num_filters is not None and keep_ratio is not None:
     num_kept = keep_ratio * num_filters * num_nodes
-    compression_ratio = num_kept / num_nodes
-    parts.append(f'kept≈{num_kept:.0f} numbers vs. {num_nodes} original (compression_ratio={compression_ratio:.3f})')
+    derived_compression_ratio = num_kept / num_nodes
+    parts.append(f'kept≈{num_kept:.0f} numbers vs. {num_nodes} original '
+                 f'(compression_ratio={derived_compression_ratio:.3f})')
+  elif compression_ratio is not None:
+    parts.append(f'compression_ratio={compression_ratio:.3f}')
   return ' | '.join(parts)
 
 
@@ -143,10 +147,11 @@ def visualize_grid_reconstruction(
         gwt_mode: Optional[Literal['exact', 'chebyshev']] = None,
         num_filters: Optional[int] = None,
         keep_ratio: Optional[float] = None,
+        compression_ratio: Optional[float] = None,
 ) -> plt.Figure:
   num_channels = signal.shape[1]
   num_nodes = rows * cols
-  sparsity_caption = _sparsity_caption(num_nodes, num_filters, keep_ratio)
+  sparsity_caption = _sparsity_caption(num_nodes, num_filters, keep_ratio, compression_ratio)
   fig_height = 5 * num_channels
   fig, axes = plt.subplots(num_channels, 3, figsize=(18, fig_height), squeeze=False)
   error_lines = []
@@ -272,10 +277,11 @@ def visualize_graph_reconstruction(
         gwt_mode: Optional[Literal['exact', 'chebyshev']] = None,
         num_filters: Optional[int] = None,
         keep_ratio: Optional[float] = None,
+        compression_ratio: Optional[float] = None,
 ) -> plt.Figure:
   num_channels = signal.shape[1]
   num_nodes = signal.shape[0]
-  sparsity_caption = _sparsity_caption(num_nodes, num_filters, keep_ratio)
+  sparsity_caption = _sparsity_caption(num_nodes, num_filters, keep_ratio, compression_ratio)
   graph = _build_networkx_graph(num_nodes, edge_index)
   fig_height = 5 * num_channels
   fig, axes = plt.subplots(num_channels, 3, figsize=(18, fig_height), squeeze=False)
@@ -412,5 +418,68 @@ def visualize_grid_sparsification_mask(
   plot_top = _add_header(fig, fig_height=fig_height, title='Sparsification Mask', title_fontsize=suptitle_fontsize,
                          caption=sparsity_caption, caption_fontsize=caption_fontsize,
                          legend_handles=legend_handles, legend_fontsize=label_fontsize)
+  fig.tight_layout(rect=(0, 0, 1, plot_top))
+  return fig
+
+
+def _draw_sgae_mask_matrix(ax: plt.Axes, mask: torch.Tensor, latent_dim: int) -> None:
+  cmap = ListedColormap(['white', 'black'])
+  ax.imshow(mask.numpy().T, aspect='auto', cmap=cmap, vmin=0, vmax=1, interpolation='none')
+  ax.set_title(f'Latent Sparsity Mask ({latent_dim} dims x nodes)', fontsize=TITLE_FONTSIZE)
+  ax.set_xlabel('node index', fontsize=LABEL_FONTSIZE)
+  ax.set_ylabel('latent dim', fontsize=LABEL_FONTSIZE)
+
+
+def visualize_graph_sgae_mask(
+        mask: torch.Tensor,
+        edge_index: torch.Tensor,
+        layout: dict,
+        compression_ratio: Optional[float] = None,
+) -> plt.Figure:
+  num_nodes, latent_dim = mask.shape
+  sparsity_caption = _sparsity_caption(num_nodes, compression_ratio=compression_ratio)
+  graph = _build_networkx_graph(num_nodes, edge_index)
+  fig_height = 6
+  fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, fig_height))
+
+  kept_per_node = mask.float().mean(dim=1).numpy()
+  nodes = _draw_graph_panel(ax0, graph, layout, kept_per_node, 'viridis', vmin=0, vmax=1)
+  ax0.set_title('Fraction of Latent Dims Kept per Node', fontsize=TITLE_FONTSIZE)
+  fig.colorbar(nodes, ax=ax0)
+
+  _draw_sgae_mask_matrix(ax1, mask, latent_dim)
+
+  legend_handles = [Patch(facecolor='black', edgecolor='gray', label='Kept'),
+                   Patch(facecolor='white', edgecolor='gray', label='Discarded')]
+  plot_top = _add_header(fig, fig_height=fig_height, title='Sparsification Mask (SGAE Latent Space)',
+                         caption=sparsity_caption, legend_handles=legend_handles)
+  fig.tight_layout(rect=(0, 0, 1, plot_top))
+  return fig
+
+
+def visualize_grid_sgae_mask(
+        mask: torch.Tensor,
+        rows: int,
+        cols: int,
+        compression_ratio: Optional[float] = None,
+) -> plt.Figure:
+  num_nodes, latent_dim = mask.shape
+  sparsity_caption = _sparsity_caption(num_nodes, compression_ratio=compression_ratio)
+  fig_height = 6
+  fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, fig_height))
+
+  kept_per_node = mask.float().mean(dim=1).reshape(rows, cols).numpy()
+  im0 = ax0.imshow(kept_per_node, aspect='auto', cmap='viridis', vmin=0, vmax=1)
+  ax0.set_title('Fraction of Latent Dims Kept per Node', fontsize=TITLE_FONTSIZE)
+  ax0.set_xlabel('cols', fontsize=LABEL_FONTSIZE)
+  ax0.set_ylabel('rows', fontsize=LABEL_FONTSIZE)
+  fig.colorbar(im0, ax=ax0)
+
+  _draw_sgae_mask_matrix(ax1, mask, latent_dim)
+
+  legend_handles = [Patch(facecolor='black', edgecolor='gray', label='Kept'),
+                   Patch(facecolor='white', edgecolor='gray', label='Discarded')]
+  plot_top = _add_header(fig, fig_height=fig_height, title='Sparsification Mask (SGAE Latent Space)',
+                         caption=sparsity_caption, legend_handles=legend_handles)
   fig.tight_layout(rect=(0, 0, 1, plot_top))
   return fig

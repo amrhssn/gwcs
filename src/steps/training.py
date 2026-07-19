@@ -58,7 +58,7 @@ def forward_batch_sgae(
         batch,
         sparsity_ratio: float,
         temperature: float,
-) -> tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
   return model(
     x=batch.x,
     edge_index=batch.edge_index,
@@ -82,8 +82,8 @@ def run_epoch_sgae(
   with torch.set_grad_enabled(optimizer is not None):
     for batch in loader:
       batch = batch.to(device)
-      x_hat, mu, logstd = forward_batch_sgae(model=model, batch=batch, sparsity_ratio=sparsity_ratio,
-                                              temperature=temperature)
+      x_hat, _, mu, logstd = forward_batch_sgae(model=model, batch=batch, sparsity_ratio=sparsity_ratio,
+                                                temperature=temperature)
       if model.is_variational:
         loss, recon, kl = elbo_loss(x_hat, batch.x, mu, logstd, batch.batch, beta=kl_beta)
       else:

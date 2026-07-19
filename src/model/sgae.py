@@ -78,7 +78,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
           batch: Tensor,
           sparsity_ratio: float,
           temperature: float
-  ) -> Tensor:
+  ) -> tuple[Tensor, Tensor]:
     # Per graph: keep round(sparsity_ratio * n_i * D) entries (by |z|) out of
     # that graph's whole (n_i, D) block.
     # Forward = hard top-k; backward = gradient of a sigmoid soft mask around the graph's own threshold (STE).
@@ -95,7 +95,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
       hard_mask[topk_idx] = 1.0
       soft_mask = torch.sigmoid((magnitude - topk_val.min()) / temperature)
       mask[idx] = (hard_mask.detach() - soft_mask.detach() + soft_mask).reshape(z[idx].shape)
-    return z * mask
+    return z * mask, mask
 
   def encode(
           self,
@@ -104,7 +104,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
           batch: Tensor,
           sparsity_ratio: float,
           temperature: float,
-  ) -> tuple[Tensor, Tensor | None, Tensor | None]:
+  ) -> tuple[Tensor, Tensor, Tensor | None, Tensor | None]:
     h = self._run_gnn(x, edge_index, self.encoder_layers, self.encoder_norms)
     if self.is_variational:
       mu, logstd = h.chunk(2, dim=-1)
@@ -112,8 +112,8 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
       z = mu + torch.randn_like(logstd) * logstd.exp() if self.training else mu
     else:
       mu, logstd, z = None, None, h
-    z_sparse = self._ste_sparsify(z, batch, sparsity_ratio, temperature)
-    return z_sparse, mu, logstd
+    z_sparse, mask = self._ste_sparsify(z, batch, sparsity_ratio, temperature)
+    return z_sparse, mask, mu, logstd
 
   def decode(
           self,
@@ -129,7 +129,7 @@ class SparseVariationalGraphAutoEncoder(nn.Module):
           batch: Tensor,
           sparsity_ratio: float,
           temperature: float,
-  ) -> tuple[Tensor, Tensor | None, Tensor | None]:
-    z_sparse, mu, logstd = self.encode(x, edge_index, batch, sparsity_ratio, temperature)
+  ) -> tuple[Tensor, Tensor, Tensor | None, Tensor | None]:
+    z_sparse, mask, mu, logstd = self.encode(x, edge_index, batch, sparsity_ratio, temperature)
     x_hat = self.decode(z_sparse, edge_index)
-    return x_hat, mu, logstd
+    return x_hat, mask, mu, logstd

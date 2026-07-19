@@ -17,9 +17,11 @@ from visualization import (
   visualize_grid_reconstruction,
   visualize_grid_gwt_coefficients,
   visualize_grid_sparsification_mask,
+  visualize_grid_sgae_mask,
   visualize_graph_reconstruction,
   visualize_graph_gwt_coefficients,
   visualize_graph_sparsification_mask,
+  visualize_graph_sgae_mask,
 )
 
 
@@ -79,6 +81,7 @@ class SGAETestSample:
   sample_idx: int
   signal: torch.Tensor
   reconstructed: torch.Tensor
+  mask: torch.Tensor
   loss: float
   error: float
   compression_ratio: float
@@ -219,16 +222,23 @@ def save_sgae_test_figures(
     if metadata.graph_type == 'grid':
       rows, cols = metadata.height, metadata.width
       reconstruction_fig = visualize_grid_reconstruction(reconstructed=result.reconstructed, signal=result.signal,
-                                                         rows=rows, cols=cols)
+                                                         rows=rows, cols=cols,
+                                                         compression_ratio=result.compression_ratio)
+      mask_fig = visualize_grid_sgae_mask(mask=result.mask, rows=rows, cols=cols,
+                                          compression_ratio=result.compression_ratio)
     else:
       nx_graph = nx.Graph()
       nx_graph.add_nodes_from(range(metadata.num_nodes))
       nx_graph.add_edges_from(graph.edge_index.t().numpy())
       layout = nx.kamada_kawai_layout(nx_graph)
       reconstruction_fig = visualize_graph_reconstruction(reconstructed=result.reconstructed, signal=result.signal,
-                                                          edge_index=graph.edge_index, layout=layout)
+                                                          edge_index=graph.edge_index, layout=layout,
+                                                          compression_ratio=result.compression_ratio)
+      mask_fig = visualize_graph_sgae_mask(mask=result.mask, edge_index=graph.edge_index, layout=layout,
+                                           compression_ratio=result.compression_ratio)
 
     save_figure(run_dir=run_dir, category="reconstruction", filename=filename, fig=reconstruction_fig)
+    save_figure(run_dir=run_dir, category="mask", filename=filename, fig=mask_fig)
 
     if (i + 1) % log_every == 0 or (i + 1) == total:
       logging.info(f"Figure progress: {i + 1}/{total} samples")
