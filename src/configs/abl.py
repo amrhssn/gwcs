@@ -23,7 +23,7 @@ def _default_scales() -> list[float]:
 @dataclass(frozen=True)
 class GraphGenerationConfig:
   graph_types: list[Literal['grid', 'erdos_renyi', 'barabasi_albert', 'sbm']] = field(
-    default_factory=lambda: ['erdos_renyi'])
+    default_factory=lambda: ['grid'])
   num_nodes_range: tuple[int, int] = (200, 400)
   num_graphs_per_type: int = 200
   barabasi_albert_min_num_edges_per_new_node_range: tuple[int, int] | None = (1, 2)
@@ -79,11 +79,11 @@ class SGAEConfig:
   latent_dim: int = 128
   activation_fn: str = 'relu'
   conv_layer_type: str = 'SAGEConv'
-  num_layers: int = 5
-  is_variational: bool = True
-  kl_beta: float = 1.0
+  num_layers: int = 7
+  is_variational: bool = False
+  kl_beta: float = 1e-4
   # STE temperature schedule
-  ste_temperature_mode: Literal['fixed', 'annealing'] = 'fixed'
+  ste_temperature_mode: Literal['fixed', 'annealing'] = 'annealing'
   ste_temperature_init: float = 0.5
   ste_temperature_final: float = 0.05
   ste_temperature_anneal_epochs: int = 100
