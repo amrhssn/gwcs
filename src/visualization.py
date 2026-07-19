@@ -363,8 +363,9 @@ def visualize_graph_sparsification_mask(
     for f in range(num_filters):
       ax = axes[c][f]
       filter_mask = mask[:, c, f].numpy()
+      node_size = 1 + filter_mask * 49
       _draw_graph_panel(ax, graph, layout, filter_mask, cmap, vmin=0, vmax=1,
-                        edge_color='#999999', edge_width=0.6, node_size=50)
+                        edge_color='#999999', edge_width=0.6, node_size=node_size)
       empirical_keep_ratio = filter_mask.mean()
       ax.set_title(f'Filter {f} (kept {empirical_keep_ratio:.1%})', fontsize=TITLE_FONTSIZE)
 
