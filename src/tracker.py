@@ -144,8 +144,19 @@ def save_history(run_dir: Path, history: list[Any]) -> None:
   (run_dir / "history.json").write_text(json.dumps([asdict(record) for record in history], indent=2))
 
 
-def save_summary(run_dir: Path, summary: RunSummary) -> None:
+def save_summary(run_dir: Path, dataset_path: str, summary: RunSummary) -> None:
   (run_dir / "summary.json").write_text(json.dumps(asdict(summary), indent=2))
+  logging.info(
+    "Run finished:\n"
+    f"  run_id: {run_dir.name}\n"
+    f"  dataset: {dataset_path}\n"
+    f"  best_epoch: {summary.best_epoch}\n"
+    f"  best_val_loss: {summary.best_val_loss:.4f}\n"
+    f"  test_loss: {summary.test_loss_mean:.4f}±{summary.test_loss_std:.4f}\n"
+    f"  test_error: {summary.test_error_mean:.4f}±{summary.test_error_std:.4f}\n"
+    f"  compression_ratio: {summary.achieved_compression_ratio_mean:.4f}±"
+    f"{summary.achieved_compression_ratio_std:.4f}"
+  )
 
 
 def summarize(values: list[float]) -> tuple[float, float]:

@@ -157,6 +157,7 @@ def main():
   # tracking run summary
   tracker.save_summary(
     run_dir=run_dir,
+    dataset_path=str(dataset.storage_path.relative_to(REPO_ROOT)),
     summary=tracker.RunSummary(
       best_epoch=best_epoch,
       best_val_loss=best_val_loss,
