@@ -26,6 +26,8 @@ def main():
   torch.manual_seed(seed)
   random_generator = torch.Generator().manual_seed(seed)
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  # set to an existing run dir (e.g., REPO_ROOT / "runs" / "turbulent_GWCS" / "<run_id>") to resume
+  resume_from: Path | None = None
 
   gwt_config = GraphWaveletTransformConfig(gwt_mode="chebyshev")
   model_config = GWCSConfig()
@@ -34,7 +36,7 @@ def main():
   raw_dir = REPO_ROOT / "datasets" / "turbulent_radiative_layer_2D" / "raw" / "data"
   dataset_dir = REPO_ROOT / "datasets" / "turbulent_radiative_layer_2D" / "processed"
 
-  run_dir = tracker.create_run_dir(REPO_ROOT / "runs" / "turbulent_GWCS")
+  run_dir = tracker.resolve_run_dir(REPO_ROOT / "runs" / "turbulent_GWCS", resume_from)
   tracker.setup_logging(run_dir)
   tracker.log_run_info(run_dir=run_dir, dataset_dir=dataset_dir, device=device, config=gwt_config)
 
@@ -94,11 +96,10 @@ def main():
     )
   )
 
-  best_val_loss = float('inf')
-  best_epoch = 0
-  epochs_without_improvement = 0
-  history: list[tracker.GWCSEpochRecord] = []
-  for epoch in range(training_config.num_epochs):
+  start_epoch, best_val_loss, best_epoch, epochs_without_improvement, history = tracker.init_training_state(
+    run_dir=run_dir, resume_from=resume_from, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler,
+    device=device)
+  for epoch in range(start_epoch, training_config.num_epochs):
     if epoch > 0:
       logging.info("-" * 60)
     epoch_start = time.perf_counter()
@@ -131,6 +132,9 @@ def main():
         logging.info(f"Early stopping at epoch: {epoch} "
                      f"(best val loss: {best_val_loss:.4f} at epoch {best_epoch})")
         break
+    tracker.save_checkpoint(run_dir=run_dir, epoch=epoch, model=model, optimizer=optimizer,
+                            lr_scheduler=lr_scheduler, best_val_loss=best_val_loss, best_epoch=best_epoch,
+                            epochs_without_improvement=epochs_without_improvement, history=history)
   tracker.save_history(run_dir=run_dir, history=history)
 
   checkpoint_path = run_dir / "checkpoint_best.pt"

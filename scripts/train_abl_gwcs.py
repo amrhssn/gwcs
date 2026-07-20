@@ -25,8 +25,10 @@ def main():
   torch.manual_seed(configs.seed)
   random_generator: torch.Generator | None = torch.Generator().manual_seed(configs.seed)
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  # set to an existing run dir (e.g. REPO_ROOT / "runs" / "ABL_GWCS" / "<run_id>") to resume
+  resume_from: Path | None = None
   dataset_dir = REPO_ROOT / "datasets" / "ABL"
-  run_dir = tracker.create_run_dir(REPO_ROOT / "runs" / "ABL_GWCS")
+  run_dir = tracker.resolve_run_dir(REPO_ROOT / "runs" / "ABL_GWCS", resume_from)
   tracker.setup_logging(run_dir)
   tracker.log_run_info(run_dir=run_dir, dataset_dir=dataset_dir, device=device, config=configs)
 
@@ -84,11 +86,10 @@ def main():
   )
 
   # training loop
-  best_val_loss = float('inf')
-  best_epoch = 0
-  epochs_without_improvement = 0
-  history: list[tracker.GWCSEpochRecord] = []
-  for epoch in range(configs.training_config.num_epochs):
+  start_epoch, best_val_loss, best_epoch, epochs_without_improvement, history = tracker.init_training_state(
+    run_dir=run_dir, resume_from=resume_from, model=model, optimizer=optimizer, lr_scheduler=lr_scheduler,
+    device=device)
+  for epoch in range(start_epoch, configs.training_config.num_epochs):
     epoch_start = time.perf_counter()
     # train
     train_loss = run_epoch_gwcs(loader=train_loader, model=model, device=device, loss_fn=reconstruction_loss,
@@ -120,6 +121,9 @@ def main():
         logging.info(f"Early stopping at epoch: {epoch} "
                      f"(best val loss: {best_val_loss:.4f} at epoch {best_epoch})")
         break
+    tracker.save_checkpoint(run_dir=run_dir, epoch=epoch, model=model, optimizer=optimizer,
+                            lr_scheduler=lr_scheduler, best_val_loss=best_val_loss, best_epoch=best_epoch,
+                            epochs_without_improvement=epochs_without_improvement, history=history)
   # tracking training history
   tracker.save_history(run_dir=run_dir, history=history)
 

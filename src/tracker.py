@@ -94,6 +94,10 @@ def create_run_dir(root: Path) -> Path:
   return run_dir
 
 
+def resolve_run_dir(root: Path, resume_from: Path | None) -> Path:
+  return resume_from if resume_from is not None else create_run_dir(root)
+
+
 def setup_logging(run_dir: Path) -> None:
   logging.basicConfig(level=logging.INFO,
                       format="[*] %(asctime)s | %(message)s",
@@ -151,6 +155,70 @@ def save_run_metadata(run_dir: Path, metadata: RunMetadata) -> None:
 
 def save_history(run_dir: Path, history: list[Any]) -> None:
   (run_dir / "history.json").write_text(json.dumps([asdict(record) for record in history], indent=2))
+
+
+def save_checkpoint(
+        run_dir: Path,
+        epoch: int,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        lr_scheduler: Any,
+        best_val_loss: float,
+        best_epoch: int,
+        epochs_without_improvement: int,
+        history: list[Any]
+) -> None:
+  torch.save(
+    {
+      "epoch": epoch,
+      "model": model.state_dict(),
+      "optimizer": optimizer.state_dict(),
+      "lr_scheduler": lr_scheduler.state_dict(),
+      "best_val_loss": best_val_loss,
+      "best_epoch": best_epoch,
+      "epochs_without_improvement": epochs_without_improvement,
+      "history": history,
+    },
+    run_dir / "checkpoint_last.pt"
+  )
+
+
+def load_checkpoint(
+        run_dir: Path,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        lr_scheduler: Any,
+        device: torch.device
+) -> dict[str, Any]:
+  checkpoint = torch.load(run_dir / "checkpoint_last.pt", map_location=device, weights_only=False)
+  model.load_state_dict(checkpoint["model"])
+  optimizer.load_state_dict(checkpoint["optimizer"])
+  lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+  return checkpoint
+
+
+def init_training_state(
+        run_dir: Path,
+        resume_from: Path | None,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        lr_scheduler: Any,
+        device: torch.device
+) -> tuple[int, float, int, int, list[Any]]:
+  start_epoch = 0
+  best_val_loss = float('inf')
+  best_epoch = 0
+  epochs_without_improvement = 0
+  history: list[Any] = []
+  if resume_from is not None and (run_dir / "checkpoint_last.pt").exists():
+    checkpoint = load_checkpoint(run_dir, model, optimizer, lr_scheduler, device)
+    start_epoch = checkpoint["epoch"] + 1
+    best_val_loss = checkpoint["best_val_loss"]
+    best_epoch = checkpoint["best_epoch"]
+    epochs_without_improvement = checkpoint["epochs_without_improvement"]
+    history = checkpoint["history"]
+    logging.info(f"Resumed from epoch {start_epoch}")
+  return start_epoch, best_val_loss, best_epoch, epochs_without_improvement, history
 
 
 def save_summary(run_dir: Path, dataset_path: str, summary: RunSummary) -> None:
