@@ -5,7 +5,7 @@ import torch
 from torch_geometric.loader import DataLoader
 
 from compression import resolve_gwcs_compression, resolve_sgae_compression
-from configs.abl import GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig
 from data.dataset import ABLGraphSignalDataset
 from eval.utils import relative_error
 from model.loss import reconstruction_loss

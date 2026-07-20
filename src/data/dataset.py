@@ -7,7 +7,8 @@ from torch_geometric.data import (
 )
 from torch_geometric.utils import to_torch_coo_tensor
 
-from configs.abl import GenerationConfig, GraphWaveletTransformConfig
+from configs.abl import GenerationConfig
+from configs.common import GraphWaveletTransformConfig
 from data.types import ABLGraphSignalSample
 from transform.kernels import default_kernels
 

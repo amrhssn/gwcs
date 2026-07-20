@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from configs.abl import GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig
 from data.turbulent.graph import build_turbulent_graph
 from data.turbulent.raw import FIELD_NAMES, list_raw_files, read_file_info, read_trajectory_signal
 from data.turbulent.dataset import TurbulentGraphSignalDataset

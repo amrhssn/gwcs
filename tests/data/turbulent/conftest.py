@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import torch
 
-from configs.abl import GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig
 
 HEIGHT = 4
 WIDTH = 6

@@ -7,7 +7,7 @@ from torch_geometric.data import (
 )
 from torch_geometric.utils import to_torch_coo_tensor
 
-from configs.abl import GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig
 from data.types import TurbulentFieldMetadata, TurbulentGraph, TurbulentSample, TurbulentSampleSignal
 from transform.kernels import default_kernels
 

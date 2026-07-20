@@ -11,9 +11,9 @@ import torch
 from configs.abl import (
   GraphGenerationConfig,
   SignalGenerationConfig,
-  GraphWaveletTransformConfig,
   GenerationConfig,
 )
+from configs.common import GraphWaveletTransformConfig
 from data.generation.graph import generate_graph
 from data.generation.signal import approximately_bandlimited
 from data.types import ABLGraphSignalSample

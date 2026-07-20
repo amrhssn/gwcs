@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 import torch
 
-from configs.abl import GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig
 from data.turbulent.graph import build_turbulent_graph
 from eval.utils import relative_error
 from steps.turbulent_preprocessing import load_or_preprocess_turbulent_split, preprocess_turbulent_split

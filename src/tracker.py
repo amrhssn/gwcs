@@ -11,7 +11,7 @@ import networkx as nx
 import torch
 
 from compression import ResolvedCompression
-from configs.abl import ABLExperimentConfig, GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig, GWCSConfig, SGAEConfig
 from data.dataset import ABLGraphSignalDataset
 from data.turbulent.dataset import TurbulentGraphSignalDataset
 from visualization import (
@@ -120,24 +120,24 @@ def _log_model_info(model: torch.nn.Module, hyperparams: dict[str, Any], device:
   logging.info(f"Architecture:\n{model}")
 
 
-def log_model_info_gwcs(model: torch.nn.Module, configs: ABLExperimentConfig, keep_ratio: float,
+def log_model_info_gwcs(model: torch.nn.Module, model_config: GWCSConfig, keep_ratio: float,
                         device: torch.device) -> None:
   _log_model_info(model=model, hyperparams={
-    "hidden_dim": configs.model_config.hidden_dim,
-    "conv_layer": configs.model_config.conv_layer_type,
-    "processor_layers": configs.model_config.processor_num_layers,
+    "hidden_dim": model_config.hidden_dim,
+    "conv_layer": model_config.conv_layer_type,
+    "processor_layers": model_config.processor_num_layers,
     "keep_ratio": keep_ratio,
   }, device=device)
 
 
-def log_sgae_model_info(model: torch.nn.Module, configs: ABLExperimentConfig, sparsity_ratio: float,
+def log_sgae_model_info(model: torch.nn.Module, model_config: SGAEConfig, sparsity_ratio: float,
                         device: torch.device) -> None:
   _log_model_info(model=model, hyperparams={
-    "latent_dim": configs.model_config.latent_dim,
-    "conv_layer": configs.model_config.conv_layer_type,
-    "num_layers": configs.model_config.num_layers,
+    "latent_dim": model_config.latent_dim,
+    "conv_layer": model_config.conv_layer_type,
+    "num_layers": model_config.num_layers,
     "sparsity_ratio": sparsity_ratio,
-    "is_variational": configs.model_config.is_variational,
+    "is_variational": model_config.is_variational,
   }, device=device)
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 from torch_geometric.loader import DataLoader
 
-from configs.abl import GraphWaveletTransformConfig
+from configs.common import GraphWaveletTransformConfig
 from steps.turbulent_preprocessing import preprocess_turbulent_split
 
 from tests.data.turbulent.conftest import HEIGHT, WIDTH, density_value

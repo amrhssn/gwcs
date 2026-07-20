@@ -66,7 +66,8 @@ def main():
     spectrum_upper_bound=dataset.configs.gwt_config.spectrum_upper_bound,
     chebyshev_degree=dataset.configs.gwt_config.chebyshev_degree
   ).to(device)
-  tracker.log_model_info_gwcs(model=model, configs=configs, keep_ratio=compression.keep_ratio, device=device)
+  tracker.log_model_info_gwcs(model=model, model_config=configs.model_config, keep_ratio=compression.keep_ratio,
+                              device=device)
   optimizer = torch.optim.AdamW(model.parameters(), lr=configs.training_config.lr,
                                 weight_decay=configs.training_config.weight_decay)
   lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min',

@@ -64,7 +64,8 @@ def main():
     num_layers=configs.model_config.num_layers,
     is_variational=configs.model_config.is_variational,
   ).to(device)
-  tracker.log_sgae_model_info(model=model, configs=configs, sparsity_ratio=compression.sparsity_ratio, device=device)
+  tracker.log_sgae_model_info(model=model, model_config=configs.model_config,
+                              sparsity_ratio=compression.sparsity_ratio, device=device)
   optimizer = torch.optim.AdamW(model.parameters(), lr=configs.training_config.lr,
                                 weight_decay=configs.training_config.weight_decay)
   lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min',

@@ -7,8 +7,8 @@ import torch
 from configs.abl import (
   GraphGenerationConfig,
   SignalGenerationConfig,
-  GraphWaveletTransformConfig,
 )
+from configs.common import GraphWaveletTransformConfig
 from data.dataset import ABLGraphSignalDataset
 from steps.data_generation import generate_abl_dataset
 
