@@ -104,6 +104,7 @@ def load_or_preprocess_turbulent_split(
         gwt_config: GraphWaveletTransformConfig,
         height: int = 128,
         width: int = 384,
+        debug: bool = False,
 ) -> TurbulentGraphSignalDataset:
   dataset_dir.mkdir(parents=True, exist_ok=True)
   cache_key = _cache_key(gwt_config, height, width)
@@ -115,6 +116,8 @@ def load_or_preprocess_turbulent_split(
     logging.info(f"Using cached turbulent split: {matched_cache_dir.name}")
     graph = build_turbulent_graph(height=height, width=width)
     sample_files = sorted((matched_cache_dir / "samples").glob("*.pt"))
+    if debug:
+      sample_files = sample_files[:10]
     cached_gwt_config = _load_gwt_config(matched_cache_dir / "config.json")
     dataset = TurbulentGraphSignalDataset(sample_files=sample_files,
                                           graph=graph,
@@ -145,4 +148,6 @@ def load_or_preprocess_turbulent_split(
     json.dumps({"gwt_config": asdict(gwt_config), "height": height, "width": width}, indent=2, sort_keys=True))
   logging.info(f"Saved preprocessed turbulent split: {new_cache_dir.name}")
   dataset.storage_path = new_cache_dir
+  if debug:
+    dataset.sample_files = dataset.sample_files[:10]
   return dataset
