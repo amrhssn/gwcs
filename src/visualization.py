@@ -152,8 +152,11 @@ def visualize_grid_reconstruction(
   num_channels = signal.shape[1]
   num_nodes = rows * cols
   sparsity_caption = _sparsity_caption(num_nodes, num_filters, keep_ratio, compression_ratio)
-  fig_height = 5 * num_channels
-  fig, axes = plt.subplots(num_channels, 3, figsize=(18, fig_height), squeeze=False)
+  aspect_ratio = cols / rows
+  panel_height = 5
+  panel_width = panel_height * aspect_ratio
+  fig_height = panel_height * num_channels
+  fig, axes = plt.subplots(num_channels, 3, figsize=(panel_width * 3, fig_height), squeeze=False)
   error_lines = []
 
   for c in range(num_channels):
@@ -205,13 +208,11 @@ def visualize_grid_gwt_coefficients(
   aspect_ratio = cols / rows
   panel_height = 8
   panel_width = panel_height * aspect_ratio
-  # Panels are rendered at 2x `panel_height`/`panel_width` below, so fonts
-  # must be scaled against that actual per-row height, not the nominal one.
-  row_height = 2 * panel_height
+  row_height = panel_height
   fig_height = row_height * num_channels
   suptitle_fontsize, title_fontsize, label_fontsize, caption_fontsize = _scaled_fontsizes(row_height)
   fig, axes = plt.subplots(num_channels, num_columns,
-                           figsize=(2 * panel_width * num_columns, fig_height),
+                           figsize=(panel_width * num_columns, fig_height),
                            squeeze=False)
 
   for c in range(num_channels):
@@ -395,11 +396,11 @@ def visualize_grid_sparsification_mask(
   aspect_ratio = cols / rows
   panel_height = 8
   panel_width = panel_height * aspect_ratio
-  row_height = 2 * panel_height
+  row_height = panel_height
   fig_height = row_height * num_channels
   suptitle_fontsize, title_fontsize, label_fontsize, caption_fontsize = _scaled_fontsizes(row_height)
   fig, axes = plt.subplots(num_channels, num_filters,
-                           figsize=(2 * panel_width * num_filters, fig_height),
+                           figsize=(panel_width * num_filters, fig_height),
                            squeeze=False)
   cmap = ListedColormap(['white', 'black'])
 
