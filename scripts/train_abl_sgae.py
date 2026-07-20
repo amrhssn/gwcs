@@ -116,7 +116,7 @@ def main():
     # scheduling lr
     lr_scheduler.step(val_loss)
     # checkpointing best model so far
-    if val_loss < best_val_loss - configs.training_config.early_stopping_min_delta:
+    if val_loss < best_val_loss * (1 - configs.training_config.early_stopping_min_delta):
       best_val_loss = val_loss
       best_epoch = epoch
       epochs_without_improvement = 0

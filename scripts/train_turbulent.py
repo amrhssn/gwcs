@@ -111,7 +111,7 @@ def main():
     logging.info(f"Epoch: {epoch + 1:5d} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | "
                 f"Time: {epoch_time:.2f}s")
     lr_scheduler.step(val_loss)
-    if val_loss < best_val_loss - configs.training_config.early_stopping_min_delta:
+    if val_loss < best_val_loss * (1 - configs.training_config.early_stopping_min_delta):
       best_val_loss = val_loss
       best_epoch = epoch
       epochs_without_improvement = 0
