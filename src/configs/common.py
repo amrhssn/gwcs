@@ -64,7 +64,7 @@ class TrainingConfig:
   batch_size: int = 25
   num_epochs: int = 500
   lr_scheduler_factor: float = 0.5
-  lr_scheduler_patience: int = 50
+  lr_scheduler_patience: int = 8
   lr_scheduler_min_lr: float = 1e-6
-  early_stopping_patience: int = 150
-  early_stopping_min_delta: float = 1e-4
+  early_stopping_patience: int = 24
+  early_stopping_min_delta: float = 0.01
