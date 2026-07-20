@@ -136,6 +136,14 @@ def log_sgae_model_info(model: torch.nn.Module, configs: ABLExperimentConfig, sp
   }, device=device)
 
 
+def log_batch_progress(epoch: int, total_epochs: int, batch_idx: int, total_batches: int, loss: float,
+                       batch_time: float, prefix: str = "Batch") -> None:
+  log_every = 1
+  if (batch_idx + 1) % log_every == 0 or (batch_idx + 1) == total_batches:
+    logging.info(f"    -> [epoch {epoch + 1}/{total_epochs}] {prefix.lower()} {batch_idx + 1}/{total_batches} "
+                 f"- loss: {loss:.4f} - batch_time: {batch_time:.2f}s")
+
+
 def save_run_metadata(run_dir: Path, metadata: RunMetadata) -> None:
   (run_dir / "config.json").write_text(json.dumps(asdict(metadata), indent=2))
 

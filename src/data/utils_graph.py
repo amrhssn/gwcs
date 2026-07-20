@@ -1,5 +1,6 @@
 import torch
 import networkx as nx
+from torch_geometric.utils import get_laplacian, to_torch_coo_tensor
 
 
 def is_connected(
@@ -21,6 +22,23 @@ def largest_connected_component_nodes(
   G.add_edges_from(edge_index.t().tolist())
   largest = max(nx.connected_components(G), key=len)
   return torch.tensor(sorted(largest), dtype=torch.long)
+
+
+def compute_symmetric_normalized_laplacian(
+        edge_index: torch.Tensor,
+        num_nodes: int,
+) -> torch.Tensor:
+  laplacian_index, laplacian_weight = get_laplacian(
+    edge_index=edge_index,
+    normalization="sym",
+    num_nodes=num_nodes
+  )
+  return to_torch_coo_tensor(
+    edge_index=laplacian_index,
+    edge_attr=laplacian_weight,
+    size=num_nodes,
+    is_coalesced=False,
+  )
 
 
 def compute_eigendecomposition(

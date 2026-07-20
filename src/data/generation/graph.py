@@ -6,8 +6,6 @@ from torch_geometric.utils import (
   grid,
   remove_self_loops,
   is_undirected,
-  get_laplacian,
-  to_torch_coo_tensor,
   erdos_renyi_graph as pyg_erdos_renyi_graph,
   barabasi_albert_graph as pyg_barabasi_albert_graph,
   stochastic_blockmodel_graph as pyg_stochastic_blockmodel_graph,
@@ -25,6 +23,7 @@ from data.types import (
 from data.utils_graph import (
   is_connected,
   largest_connected_component_nodes,
+  compute_symmetric_normalized_laplacian,
   compute_eigendecomposition
 )
 
@@ -223,16 +222,9 @@ def generate_graph(
       f"Largest connected component of {graph_type} graph is not connected: {edge_index}"
 
   # symmetric normalized laplacian
-  laplacian_index, laplacian_weight = get_laplacian(
+  symmetric_normalized_laplacian = compute_symmetric_normalized_laplacian(
     edge_index=edge_index,
-    normalization="sym",
-    num_nodes=metadata.num_nodes
-  )
-  symmetric_normalized_laplacian = to_torch_coo_tensor(
-    edge_index=laplacian_index,
-    edge_attr=laplacian_weight,
-    size=metadata.num_nodes,
-    is_coalesced=False,
+    num_nodes=metadata.num_nodes,
   )
   eigenvalues, eigenvectors = compute_eigendecomposition(
     symmetric_normalized_laplacian=symmetric_normalized_laplacian

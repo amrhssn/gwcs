@@ -95,7 +95,7 @@ class TrainingConfig:
   weight_decay: float = 5e-4
   train_ratio: float = 0.6
   val_ratio: float = 0.2
-  batch_size: int = 16
+  batch_size: int = 25
   num_epochs: int = 500
   lr_scheduler_factor: float = 0.5
   lr_scheduler_patience: int = 50

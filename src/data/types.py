@@ -75,3 +75,34 @@ class ABLGraphSignalSample:
   graph: Graph
   signal: ABLSignal
   gwt_coeffs: torch.Tensor
+
+
+@dataclass(frozen=True)
+class TurbulentGraph:
+  edge_index: torch.Tensor
+  symmetric_normalized_laplacian: torch.Tensor
+  metadata: GridGraphMetadata
+
+
+@dataclass(frozen=True)
+class TurbulentFieldMetadata:
+  field_names: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class TurbulentSample:
+  graph: TurbulentGraph
+  x: torch.Tensor
+  gwt_coeffs: torch.Tensor
+  tcool: float
+  trajectory_id: int
+  timestep: int
+
+
+@dataclass(frozen=True)
+class TurbulentSampleSignal:
+  x: torch.Tensor
+  gwt_coeffs: torch.Tensor
+  tcool: float
+  trajectory_id: int
+  timestep: int
