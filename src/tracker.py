@@ -13,6 +13,7 @@ import torch
 from compression import ResolvedCompression
 from configs.abl import ABLExperimentConfig, GraphWaveletTransformConfig
 from data.dataset import ABLGraphSignalDataset
+from data.turbulent.dataset import TurbulentGraphSignalDataset
 from visualization import (
   visualize_grid_reconstruction,
   visualize_grid_gwt_coefficients,
@@ -174,13 +175,13 @@ def summarize(values: list[float]) -> tuple[float, float]:
 def save_figure(run_dir: Path, category: str, filename: str, fig: plt.Figure, dpi: int = 150) -> None:
   fig_dir = run_dir / "figs" / category
   fig_dir.mkdir(parents=True, exist_ok=True)
-  fig.savefig(fig_dir / filename, dpi=dpi, bbox_inches="tight")
+  fig.savefig(fig_dir / filename, dpi=dpi, bbox_inches="tight", pil_kwargs={"compress_level": 9})
   plt.close(fig)
 
 
 def save_gwcs_test_figures(
         results: list[GWCSTestSample],
-        test_dataset: ABLGraphSignalDataset,
+        test_dataset: ABLGraphSignalDataset | TurbulentGraphSignalDataset,
         run_dir: Path,
         gwt_config: GraphWaveletTransformConfig,
         keep_ratio: float,
