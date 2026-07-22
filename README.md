@@ -11,27 +11,30 @@ datasets, including large-volume simulated PDEs over meshes. It is built on thre
 
 ## Setup
 
-Install uv:
+1. Clone the repository.
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+2. Install uv:
 
-Install dependencies:
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-For CUDA machine:
-```bash
-uv sync --extra gpu
-```
-For CPU machine:
-```bash
-uv sync --extra cpu
-```
+3. Install dependencies:
 
-Optionally, run unit tests:
-```bash
-uv run pytest
-```
+   For CUDA machine:
+   ```bash
+   uv sync --extra gpu
+   ```
+   For CPU machine:
+   ```bash
+   uv sync --extra cpu
+   ```
+
+4. Optionally, run unit tests as a sanity check:
+
+   ```bash
+   uv run pytest
+   ```
 
 ## Training GWCS
 
