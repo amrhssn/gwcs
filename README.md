@@ -30,7 +30,7 @@ datasets, including large-volume simulated PDEs over meshes. It is built on thre
    uv sync --extra cpu
    ```
 
-4. Optionally, run unit tests as a sanity check:
+4. Optionally, run unit tests:
 
    ```bash
    uv run pytest
