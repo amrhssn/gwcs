@@ -21,7 +21,7 @@ uv sync --extra cpu
 
 ## Training GWCS
 
-### ABL
+### Approximately Band-limited (ABL)
 
 ABL data is synthetic and generated automatically on first run.
 
@@ -29,7 +29,7 @@ ABL data is synthetic and generated automatically on first run.
 uv run python scripts/train_abl_gwcs.py
 ```
 
-### Turbulent radiative layer
+### Turbulent radiative layer 2D
 
 Download the raw data first (from Hugging Face):
 
