@@ -28,6 +28,11 @@ For CPU machine:
 uv sync --extra cpu
 ```
 
+Optionally, run unit tests:
+```bash
+uv run pytest
+```
+
 ## Training GWCS
 
 ### Approximately Band-limited (ABL)
