@@ -49,9 +49,11 @@ class ABLExperimentConfig:
 
 def default_abl_configs_gwcs() -> ABLExperimentConfig:
   return ABLExperimentConfig(model_config=GWCSConfig(),
-                             training_config=TrainingConfig(early_stopping_patience=100))
+                             training_config=TrainingConfig(early_stopping_patience=100,
+                                                            num_epochs=1_000))
 
 
 def default_abl_configs_sgae() -> ABLExperimentConfig:
   return ABLExperimentConfig(model_config=SGAEConfig(),
-                             training_config=TrainingConfig(early_stopping_patience=100))
+                             training_config=TrainingConfig(early_stopping_patience=100,
+                                                            num_epochs=1_000))
