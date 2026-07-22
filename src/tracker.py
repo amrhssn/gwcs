@@ -19,10 +19,14 @@ from visualization import (
   visualize_grid_gwt_coefficients,
   visualize_grid_sparsification_mask,
   visualize_grid_sgae_mask,
+  visualize_grid_joint_figure,
+  visualize_grid_sgae_joint_figure,
   visualize_graph_reconstruction,
   visualize_graph_gwt_coefficients,
   visualize_graph_sparsification_mask,
   visualize_graph_sgae_mask,
+  visualize_graph_joint_figure,
+  visualize_graph_sgae_joint_figure,
 )
 
 
@@ -271,6 +275,11 @@ def save_gwcs_test_figures(
                                                          scales=gwt_config.scales, rows=rows, cols=cols,
                                                          gwt_mode=gwt_config.gwt_mode)
       mask_fig = visualize_grid_sparsification_mask(mask=result.mask, rows=rows, cols=cols, keep_ratio=keep_ratio)
+      paper_fig = visualize_grid_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
+                                              coeffs=result.coeffs, mask=result.mask, rows=rows, cols=cols,
+                                              scales=gwt_config.scales,
+                                              compression_ratio=result.compression_ratio,
+                                              gwt_mode=gwt_config.gwt_mode)
     else:
       nx_graph = nx.Graph()
       nx_graph.add_nodes_from(range(metadata.num_nodes))
@@ -285,10 +294,16 @@ def save_gwcs_test_figures(
                                                           layout=layout, gwt_mode=gwt_config.gwt_mode)
       mask_fig = visualize_graph_sparsification_mask(mask=result.mask, edge_index=graph.edge_index, layout=layout,
                                                      keep_ratio=keep_ratio)
+      paper_fig = visualize_graph_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
+                                               coeffs=result.coeffs, mask=result.mask, edge_index=graph.edge_index,
+                                               layout=layout, scales=gwt_config.scales,
+                                               compression_ratio=result.compression_ratio,
+                                               gwt_mode=gwt_config.gwt_mode)
 
     save_figure(run_dir=run_dir, category="reconstruction", filename=filename, fig=reconstruction_fig)
     save_figure(run_dir=run_dir, category="coefficients", filename=filename, fig=coefficients_fig)
     save_figure(run_dir=run_dir, category="mask", filename=filename, fig=mask_fig)
+    save_figure(run_dir=run_dir, category="paper", filename=filename, fig=paper_fig)
 
     if (i + 1) % log_every == 0 or (i + 1) == total:
       logging.info(f"Figure progress: {i + 1}/{total} samples")
@@ -314,6 +329,9 @@ def save_sgae_test_figures(
                                                          compression_ratio=result.compression_ratio)
       mask_fig = visualize_grid_sgae_mask(mask=result.mask, rows=rows, cols=cols,
                                           compression_ratio=result.compression_ratio)
+      paper_fig = visualize_grid_sgae_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
+                                                   mask=result.mask, rows=rows, cols=cols,
+                                                   compression_ratio=result.compression_ratio)
     else:
       nx_graph = nx.Graph()
       nx_graph.add_nodes_from(range(metadata.num_nodes))
@@ -324,9 +342,13 @@ def save_sgae_test_figures(
                                                           compression_ratio=result.compression_ratio)
       mask_fig = visualize_graph_sgae_mask(mask=result.mask, edge_index=graph.edge_index, layout=layout,
                                            compression_ratio=result.compression_ratio)
+      paper_fig = visualize_graph_sgae_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
+                                                    mask=result.mask, edge_index=graph.edge_index, layout=layout,
+                                                    compression_ratio=result.compression_ratio)
 
     save_figure(run_dir=run_dir, category="reconstruction", filename=filename, fig=reconstruction_fig)
     save_figure(run_dir=run_dir, category="mask", filename=filename, fig=mask_fig)
+    save_figure(run_dir=run_dir, category="paper", filename=filename, fig=paper_fig)
 
     if (i + 1) % log_every == 0 or (i + 1) == total:
       logging.info(f"Figure progress: {i + 1}/{total} samples")
