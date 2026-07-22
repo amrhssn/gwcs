@@ -48,7 +48,7 @@ uv run python scripts/train_abl_gwcs.py
 
 ### Turbulent radiative layer 2D
 
-Download the raw data first (from Hugging Face):
+Download the raw data first:
 
 ```bash
 uv run python scripts/download_raw_data.py --dataset turbulent_radiative_layer_2D
