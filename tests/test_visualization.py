@@ -134,7 +134,7 @@ def test_visualize_grid_gwt_coefficients_grid_shape(grid_graph):
     assert f'Signal — Channel {c}' in channel_axes[0].get_title()
     assert 'Scaling Function' in channel_axes[1].get_title()
     for f, ax in enumerate(channel_axes[2:], start=1):
-      assert f'Wavelet Scale {f}' in ax.get_title()
+      assert f'Scale {f}' in ax.get_title()
       assert f'{SCALES[f - 1]:.2f}' in ax.get_title()
 
 
