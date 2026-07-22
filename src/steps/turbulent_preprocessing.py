@@ -39,6 +39,13 @@ def _load_gwt_config(path: Path) -> GraphWaveletTransformConfig:
   return GraphWaveletTransformConfig(**data["gwt_config"])
 
 
+def _ensure_raw_data_exists(raw_split_dir: Path) -> None:
+  if not list_raw_files(raw_split_dir):
+    raise FileNotFoundError(
+      f"No raw data found in {raw_split_dir}. Run "
+      f"`uv run python scripts/download_raw_data.py --dataset turbulent_radiative_layer_2D` first.")
+
+
 def preprocess_turbulent_split(
         raw_split_dir: Path,
         gwt_config: GraphWaveletTransformConfig,
@@ -139,6 +146,7 @@ def load_or_preprocess_turbulent_split(
     logging.info(f"No cached turbulent split found (key={cache_key}); preprocessing {raw_split_dir}")
   samples_dir = new_cache_dir / "samples"
 
+  _ensure_raw_data_exists(raw_split_dir=raw_split_dir)
   dataset = preprocess_turbulent_split(raw_split_dir=raw_split_dir,
                                        gwt_config=gwt_config,
                                        samples_dir=samples_dir,
