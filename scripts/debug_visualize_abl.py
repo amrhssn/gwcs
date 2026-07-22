@@ -25,11 +25,15 @@ from visualization import (
   visualize_graph_gwt_coefficients,
   visualize_graph_reconstruction,
   visualize_graph_sparsification_mask,
+  visualize_grid_joint_figure,
+  visualize_graph_joint_figure,
 )
 
 GRAPH_TYPES: list[Literal['grid', 'erdos_renyi', 'barabasi_albert', 'sbm']] = ['grid', 'erdos_renyi']
 NUM_NODES = 100
 SCALES = [0.3, 1.0, 3.0]
+
+JOINT_FIGURE_SCALES = [0.3, 1.0, 2.0, 3.0]
 SPECTRUM_LOWER_BOUND = 0.0
 SPECTRUM_UPPER_BOUND = 2.0
 SCALING_KERNEL_CUTOFF_EIGENVALUE = SPECTRUM_UPPER_BOUND / 50
@@ -101,6 +105,21 @@ def _visualize_graph_type(graph_type: str) -> None:
   mask = multilevel_importance_sampling(coeffs=exact_coeffs, keep_ratio=KEEP_RATIO,
                                         random_generator=torch.Generator().manual_seed(0))
 
+  # separate filter bank for the combined paper figure (fixed at 5 columns: 1 scaling + 4 bandpass)
+  paper_kernels = default_kernels(minimum_eigenvalue=SCALING_KERNEL_CUTOFF_EIGENVALUE, scales=JOINT_FIGURE_SCALES)
+  paper_coeffs = exact_analysis(signal=signal,
+                                symmetric_normalized_laplacian=graph.symmetric_normalized_laplacian,
+                                spectral_kernels=paper_kernels,
+                                eigenvalues=graph.eigenvalues,
+                                eigenvectors=graph.eigenvectors)
+  paper_reconstructed = exact_synthesis(wavelet_coeffs=paper_coeffs,
+                                        symmetric_normalized_laplacian=graph.symmetric_normalized_laplacian,
+                                        spectral_kernels=paper_kernels,
+                                        eigenvalues=graph.eigenvalues,
+                                        eigenvectors=graph.eigenvectors)
+  paper_mask = multilevel_importance_sampling(coeffs=paper_coeffs, keep_ratio=KEEP_RATIO,
+                                              random_generator=torch.Generator().manual_seed(0))
+
   if graph_type == 'grid':
     rows, cols = graph.metadata.height, graph.metadata.width
     visualize_signal(signal=signal, edge_index=graph.edge_index, graph_type=graph_type, pos=graph.metadata.pos)
@@ -113,6 +132,9 @@ def _visualize_graph_type(graph_type: str) -> None:
     visualize_grid_reconstruction(reconstructed=chebyshev_reconstructed, signal=signal, rows=rows, cols=cols,
                                   gwt_mode='chebyshev', num_filters=num_filters, keep_ratio=KEEP_RATIO)
     visualize_grid_sparsification_mask(mask=mask, rows=rows, cols=cols, keep_ratio=KEEP_RATIO)
+    visualize_grid_joint_figure(signal=signal, reconstructed=paper_reconstructed, coeffs=paper_coeffs,
+                                mask=paper_mask, rows=rows, cols=cols, scales=JOINT_FIGURE_SCALES,
+                                gwt_mode='exact')
   else:
     nx_graph = nx.Graph()
     nx_graph.add_nodes_from(range(graph.metadata.num_nodes))
@@ -129,6 +151,9 @@ def _visualize_graph_type(graph_type: str) -> None:
                                    edge_index=graph.edge_index, layout=layout, gwt_mode='chebyshev',
                                    num_filters=num_filters, keep_ratio=KEEP_RATIO)
     visualize_graph_sparsification_mask(mask=mask, edge_index=graph.edge_index, layout=layout, keep_ratio=KEEP_RATIO)
+    visualize_graph_joint_figure(signal=signal, reconstructed=paper_reconstructed, coeffs=paper_coeffs,
+                                 mask=paper_mask, edge_index=graph.edge_index, layout=layout,
+                                 scales=JOINT_FIGURE_SCALES, gwt_mode='exact')
 
 
 def main() -> None:
