@@ -24,6 +24,8 @@ JOINT_COLORBAR_TICK_FONTSIZE = 6.5
 JOINT_MASK_PCT_FONTSIZE = 8.5
 JOINT_ROW_GAP_IN = 0.28
 JOINT_ROW_GAP_TO_RECON_IN = 0.36
+JOINT_COLORBAR_GAP_IN = 0.18
+JOINT_COLORBAR_WIDTH_IN = 0.14
 
 
 
@@ -516,8 +518,12 @@ def _paper_figure_caption(
   return ' | '.join(parts)
 
 
-def _paper_inset_colorbar(fig: plt.Figure, ax: plt.Axes, mappable) -> None:
-  cax = ax.inset_axes((1.08, 0.06, 0.08, 0.88))
+def _paper_inset_colorbar(fig: plt.Figure, ax: plt.Axes, mappable, panel_width_in: float) -> None:
+  # Colorbar offset/width are absolute inches (converted to axes-relative fraction via panel_width_in) so
+  # they always land inside the fixed column gap, regardless of how wide/narrow the panel itself is.
+  rel_x0 = 1 + JOINT_COLORBAR_GAP_IN / panel_width_in
+  rel_width = JOINT_COLORBAR_WIDTH_IN / panel_width_in
+  cax = ax.inset_axes((rel_x0, 0.06, rel_width, 0.88))
   cb = fig.colorbar(mappable, cax=cax)
   cb.locator = MaxNLocator(nbins=3)
   cb.update_ticks()
@@ -621,7 +627,7 @@ def visualize_grid_joint_figure(
     ax.set_title(column_titles[f], fontsize=JOINT_TITLE_FONTSIZE)
     ax.set_xticks([])
     ax.set_yticks([])
-    _paper_inset_colorbar(fig, ax, im)
+    _paper_inset_colorbar(fig, ax, im, panel_width_in)
 
     mask_ax = axes[(1, f)]
     filter_mask = mask[:, channel, f].numpy()
@@ -638,7 +644,7 @@ def visualize_grid_joint_figure(
     ax.set_title(title, fontsize=JOINT_TITLE_FONTSIZE)
     ax.set_xticks([])
     ax.set_yticks([])
-    _paper_inset_colorbar(fig, ax, im)
+    _paper_inset_colorbar(fig, ax, im, panel_width_in)
 
   mse = float((error_grid ** 2).mean())
   caption = _paper_figure_caption(num_nodes=num_nodes, channel=channel, compression_ratio=compression_ratio,
@@ -686,7 +692,7 @@ def visualize_graph_joint_figure(
     ax = axes[(0, f)]
     nodes = _draw_graph_panel(ax, graph, layout, coeffs[:, channel, f].numpy(), 'RdBu_r')
     ax.set_title(column_titles[f], fontsize=JOINT_TITLE_FONTSIZE)
-    _paper_inset_colorbar(fig, ax, nodes)
+    _paper_inset_colorbar(fig, ax, nodes, panel_size_in)
 
     mask_ax = axes[(1, f)]
     filter_mask = mask[:, channel, f].numpy()
@@ -701,7 +707,7 @@ def visualize_graph_joint_figure(
     ax = axes[(2, col)]
     nodes = _draw_graph_panel(ax, graph, layout, data, cmap)
     ax.set_title(title, fontsize=JOINT_TITLE_FONTSIZE)
-    _paper_inset_colorbar(fig, ax, nodes)
+    _paper_inset_colorbar(fig, ax, nodes, panel_size_in)
 
   mse = float((error_values ** 2).mean())
   caption = _paper_figure_caption(num_nodes=num_nodes, channel=channel, compression_ratio=compression_ratio,
@@ -741,7 +747,7 @@ def visualize_grid_sgae_joint_figure(
   mask_ax.set_title(f'{kept_per_node.mean() * 100:.1f}% kept', fontsize=JOINT_MASK_PCT_FONTSIZE)
   mask_ax.set_xticks([])
   mask_ax.set_yticks([])
-  _paper_inset_colorbar(fig, mask_ax, im)
+  _paper_inset_colorbar(fig, mask_ax, im, panel_width_in)
 
   recon_data = [signal_grid, reconstructed_grid, error_grid]
   recon_cmaps = ['RdBu_r', 'RdBu_r', 'Reds']
@@ -751,7 +757,7 @@ def visualize_grid_sgae_joint_figure(
     ax.set_title(title, fontsize=JOINT_TITLE_FONTSIZE)
     ax.set_xticks([])
     ax.set_yticks([])
-    _paper_inset_colorbar(fig, ax, im)
+    _paper_inset_colorbar(fig, ax, im, panel_width_in)
 
   mse = float((error_grid ** 2).mean())
   caption = _paper_figure_caption(num_nodes=num_nodes, channel=channel, compression_ratio=compression_ratio,
@@ -788,7 +794,7 @@ def visualize_graph_sgae_joint_figure(
   mask_ax = axes[(0, 1)]
   nodes = _draw_graph_panel(mask_ax, graph, layout, kept_per_node, 'viridis', vmin=0, vmax=1)
   mask_ax.set_title(f'{kept_per_node.mean() * 100:.1f}% kept', fontsize=JOINT_MASK_PCT_FONTSIZE)
-  _paper_inset_colorbar(fig, mask_ax, nodes)
+  _paper_inset_colorbar(fig, mask_ax, nodes, panel_size_in)
 
   recon_data = [signal_values, reconstructed_values, error_values]
   recon_cmaps = ['RdBu_r', 'RdBu_r', 'Reds']
@@ -796,7 +802,7 @@ def visualize_graph_sgae_joint_figure(
     ax = axes[(1, col)]
     nodes = _draw_graph_panel(ax, graph, layout, data, cmap)
     ax.set_title(title, fontsize=JOINT_TITLE_FONTSIZE)
-    _paper_inset_colorbar(fig, ax, nodes)
+    _paper_inset_colorbar(fig, ax, nodes, panel_size_in)
 
   mse = float((error_values ** 2).mean())
   caption = _paper_figure_caption(num_nodes=num_nodes, channel=channel, compression_ratio=compression_ratio,

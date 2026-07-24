@@ -251,20 +251,29 @@ def save_figure(run_dir: Path, category: str, filename: str, fig: plt.Figure, dp
   plt.close(fig)
 
 
+def paper_field_folder(field_names: tuple[str, ...] | None, channel: int) -> str:
+  if field_names is not None and channel < len(field_names):
+    return f"{field_names[channel]}_channel{channel}"
+  return f"channel{channel}"
+
+
 def save_gwcs_test_figures(
         results: list[GWCSTestSample],
         test_dataset: ABLGraphSignalDataset | TurbulentGraphSignalDataset,
         run_dir: Path,
         gwt_config: GraphWaveletTransformConfig,
         keep_ratio: float,
+        channels: list[int] | None = None,
 ) -> None:
   total = len(results)
   log_every = max(1, total // 5)
   logging.info(f"Saving test figures: {total} samples")
+  field_names = getattr(getattr(test_dataset, 'field_metadata', None), 'field_names', None)
   for i, result in enumerate(results):
     graph = test_dataset.get_sample(result.sample_idx).graph
     metadata = graph.metadata
     filename = f"sample_{result.sample_idx:04d}.png"
+    paper_channels = channels if channels is not None else range(result.signal.shape[1])
 
     if metadata.graph_type == 'grid':
       rows, cols = metadata.height, metadata.width
@@ -275,11 +284,14 @@ def save_gwcs_test_figures(
                                                          scales=gwt_config.scales, rows=rows, cols=cols,
                                                          gwt_mode=gwt_config.gwt_mode)
       mask_fig = visualize_grid_sparsification_mask(mask=result.mask, rows=rows, cols=cols, keep_ratio=keep_ratio)
-      paper_fig = visualize_grid_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
-                                              coeffs=result.coeffs, mask=result.mask, rows=rows, cols=cols,
-                                              scales=gwt_config.scales,
-                                              compression_ratio=result.compression_ratio,
-                                              gwt_mode=gwt_config.gwt_mode)
+      for c in paper_channels:
+        paper_fig = visualize_grid_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
+                                                coeffs=result.coeffs, mask=result.mask, rows=rows, cols=cols,
+                                                scales=gwt_config.scales,
+                                                compression_ratio=result.compression_ratio,
+                                                gwt_mode=gwt_config.gwt_mode, channel=c)
+        save_figure(run_dir=run_dir, category=f"paper/{paper_field_folder(field_names, c)}", filename=filename,
+                   fig=paper_fig)
     else:
       nx_graph = nx.Graph()
       nx_graph.add_nodes_from(range(metadata.num_nodes))
@@ -294,16 +306,18 @@ def save_gwcs_test_figures(
                                                           layout=layout, gwt_mode=gwt_config.gwt_mode)
       mask_fig = visualize_graph_sparsification_mask(mask=result.mask, edge_index=graph.edge_index, layout=layout,
                                                      keep_ratio=keep_ratio)
-      paper_fig = visualize_graph_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
-                                               coeffs=result.coeffs, mask=result.mask, edge_index=graph.edge_index,
-                                               layout=layout, scales=gwt_config.scales,
-                                               compression_ratio=result.compression_ratio,
-                                               gwt_mode=gwt_config.gwt_mode)
+      for c in paper_channels:
+        paper_fig = visualize_graph_joint_figure(signal=result.signal, reconstructed=result.reconstructed,
+                                                 coeffs=result.coeffs, mask=result.mask, edge_index=graph.edge_index,
+                                                 layout=layout, scales=gwt_config.scales,
+                                                 compression_ratio=result.compression_ratio,
+                                                 gwt_mode=gwt_config.gwt_mode, channel=c)
+        save_figure(run_dir=run_dir, category=f"paper/{paper_field_folder(field_names, c)}", filename=filename,
+                   fig=paper_fig)
 
     save_figure(run_dir=run_dir, category="reconstruction", filename=filename, fig=reconstruction_fig)
     save_figure(run_dir=run_dir, category="coefficients", filename=filename, fig=coefficients_fig)
     save_figure(run_dir=run_dir, category="mask", filename=filename, fig=mask_fig)
-    save_figure(run_dir=run_dir, category="paper", filename=filename, fig=paper_fig)
 
     if (i + 1) % log_every == 0 or (i + 1) == total:
       logging.info(f"Figure progress: {i + 1}/{total} samples")
