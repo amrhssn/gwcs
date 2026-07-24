@@ -62,7 +62,7 @@ class TrainingConfig:
   train_ratio: float = 0.6
   val_ratio: float = 0.2
   batch_size: int = 25
-  num_epochs: int = 250
+  num_epochs: int = 100
   lr_scheduler_factor: float = 0.5
   lr_scheduler_patience: int = 8
   lr_scheduler_min_lr: float = 1e-6
