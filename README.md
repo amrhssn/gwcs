@@ -17,7 +17,7 @@ datasets, including large-volume simulated PDEs over meshes. It is built on thre
 
 1. Clone the repository.
 
-2. Install uv:
+2. Install [uv](https://docs.astral.sh/uv/):
 
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
