@@ -1,6 +1,6 @@
 # Multilevel Graph Wavelet Compressed Sensing with Scale-Aware Neural Recovery
 
-![Density reconstruction sample on the turbulent radiative layer 2D dataset](assets/sample_0092.png)
+![Density reconstruction sample on the turbulent radiative layer 2D dataset](assets/er_1.png)
 *Sample from the turbulent radiative layer 2D dataset in [The Well](https://github.com/PolymathicAI/the_well), compression ratio 5%. Top row: SGWT. Middle row: MLIS mask. Bottom row: NIGWT reconstruction.*
 
 Graph Wavelet Compressed Sensing (GWCS) is a method for compressing graph signal
