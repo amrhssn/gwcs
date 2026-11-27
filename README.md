@@ -83,3 +83,18 @@ runs/
     ├── summary.json                  # final test metrics
     └── figs/                         # reconstruction figures
 ```
+
+## Citation
+
+If you find this code or our [paper](https://doi.org/10.1137/1.9781611979329.15) useful in your research, please cite:
+
+```bibtex
+@inproceedings{nouranizadeh2026multilevel,
+  title={Multilevel Graph Wavelet Compressed Sensing with Scale-Aware Neural Recovery},
+  author={Nouranizadeh, Amirhossein and Patil, Sarang and Varghese, Alan John and Narayanan, Varsha and Chakraborty, Amit and Xu, Mengjia},
+  booktitle={Proceedings of the 2026 SIAM International Conference on Data Mining (SDM)},
+  pages={192--210},
+  year={2026},
+  organization={SIAM}
+}
+```
