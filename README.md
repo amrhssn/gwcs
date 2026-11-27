@@ -3,7 +3,7 @@
 ![Density reconstruction sample on the turbulent radiative layer 2D dataset](assets/sample_0092_3x3.png)
 <sub>*Sample from the turbulent radiative layer 2D dataset in [The Well](https://github.com/PolymathicAI/the_well), compression ratio 5%. Row 1: SGWT coefficients (scaling, and the finest and coarsest bandpass scales). Row 2: the MLIS sampling mask for each of those scales. Row 3: ground-truth signal, NIGWT reconstruction, and error.*</sub>
 
-Graph Wavelet Compressed Sensing (GWCS) is a method for compressing graph signal
+Graph Wavelet Compressed Sensing ([GWCS](https://doi.org/10.1137/1.9781611979329.15)) is a method for compressing graph signal
 datasets, including large-volume simulated PDEs over meshes. It is built on three modules:
 
 - **SGWT** (Spectral Graph Wavelet Transform) `graph signal → dense wavelet coefficients`<br>
